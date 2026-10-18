@@ -57,7 +57,6 @@ scope.onmessage = (ev: MessageEvent) => {
       halfWidth: Number(msg.halfWidth ?? 1),
       mu: Number(msg.mu ?? 1),
       source: 'user',
-      id: 'user-track',
     });
     const pool = Array.from({ length: env.n }, (_, i) => (i % 5 === 0 ? tracks[i % Math.max(1, tracks.length)]! : user));
     env.reset(pool, cfgs(pool));

@@ -45,7 +45,7 @@ export class EpisodeBook {
   }
 }
 
-const MAX_DS = 0.55;
+export const MAX_DS = 0.55;
 
 export function scoreStep(inp: RewardInput, book: EpisodeBook, stepCap: number, lapsTarget: number, laps: number): RewardOut {
   let reward = -0.01;

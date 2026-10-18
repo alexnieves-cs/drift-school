@@ -52,11 +52,87 @@ export function chaikin(points: V2[], closed = false): V2[] {
   return out;
 }
 
-export function smoothStroke(points: V2[], closed: boolean): V2[] {
-  const simple = rdp(points, 0.25);
-  let cur = simple;
-  for (let i = 0; i < 2; i++) cur = chaikin(cur, closed);
+/** Drop trailing points that sit within `gap` of the start, so a closed stroke has no duplicate seam. */
+export function trimClosingTail(points: V2[], gap = 1): V2[] {
+  const body = points.slice();
+  while (body.length > 3 && dist(body[body.length - 1]!, body[0]!) < gap) body.pop();
+  return body;
+}
+
+/** Even arc-length spacing. Uneven control points make the spline overshoot where spacing jumps. */
+export function resamplePolyline(points: V2[], spacing: number, closed: boolean): V2[] {
+  const pts = closed ? [...points, points[0]!] : points;
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) total += dist(pts[i - 1]!, pts[i]!);
+  const count = Math.max(closed ? 4 : 2, Math.round(total / spacing));
+  const step = total / (closed ? count : count - 1);
+  const out: V2[] = [];
+  let seg = 1;
+  let acc = 0;
+  for (let k = 0; k < (closed ? count : count - 1); k++) {
+    const target = k * step;
+    while (seg < pts.length - 1 && acc + dist(pts[seg - 1]!, pts[seg]!) < target) {
+      acc += dist(pts[seg - 1]!, pts[seg]!);
+      seg++;
+    }
+    const a = pts[seg - 1]!;
+    const b = pts[seg]!;
+    const len = dist(a, b) || 1;
+    const t = Math.min(1, Math.max(0, (target - acc) / len));
+    out.push({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t });
+  }
+  if (!closed) out.push({ ...pts[pts.length - 1]! });
+  return out;
+}
+
+function turnCurvature(a: V2, b: V2, c: V2): number {
+  const ab = dist(a, b);
+  const bc = dist(b, c);
+  const ac = dist(a, c);
+  const area2 = Math.abs((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x));
+  const den = ab * bc * ac;
+  return den < 1e-9 ? 0 : (2 * area2) / den;
+}
+
+/**
+ * Curvature limiter. Points whose turn is tighter than `maxCurvature` are pulled toward the
+ * midpoint of their neighbours, repeatedly, until none are. Hand-drawn jitter otherwise leaves
+ * local kinks that fold the inside edge over itself.
+ */
+export function limitCurvature(points: V2[], closed: boolean, maxCurvature: number, iterations = 60): V2[] {
+  let cur = points.map((p) => ({ ...p }));
+  const n = cur.length;
+  if (n < 4) return cur;
+  const lo = closed ? 0 : 1;
+  const hi = closed ? n : n - 1;
+  for (let it = 0; it < iterations; it++) {
+    let moved = false;
+    const next = cur.map((p) => ({ ...p }));
+    for (let i = lo; i < hi; i++) {
+      const a = cur[(i - 1 + n) % n]!;
+      const b = cur[i]!;
+      const c = cur[(i + 1) % n]!;
+      if (turnCurvature(a, b, c) > maxCurvature) {
+        next[i] = { x: b.x + 0.5 * ((a.x + c.x) / 2 - b.x), z: b.z + 0.5 * ((a.z + c.z) / 2 - b.z) };
+        moved = true;
+      }
+    }
+    cur = next;
+    if (!moved) break;
+  }
   return cur;
+}
+
+/**
+ * RDP, then Chaikin x2, then the curvature limiter. A closed stroke is smoothed as a loop and
+ * returned without a repeated first point.
+ */
+export function smoothStroke(points: V2[], closed: boolean, halfWidth = 1): V2[] {
+  const body = closed ? trimClosingTail(points) : points;
+  let cur = rdp(body, 0.12);
+  for (let i = 0; i < 2; i++) cur = chaikin(cur, closed);
+  cur = resamplePolyline(cur, 0.3, closed);
+  return limitCurvature(cur, closed, 0.7 / halfWidth);
 }
 
 export function toFloat(points: V2[]): Float32Array {

@@ -89,7 +89,8 @@ export class WallWorld {
     const hit = this.scratch;
     hit.hit = false;
     hit.impactSpeed = 0;
-    const rot = { x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) };
+    // Sim heading is (cos yaw, sin yaw) in (x, z), a rotation of -yaw about +y.
+    const rot = { x: 0, y: -Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) };
     const ox = px - vx * dt;
     const oz = pz - vz * dt;
     const speed = Math.hypot(vx, vz);

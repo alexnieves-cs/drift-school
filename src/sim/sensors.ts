@@ -12,37 +12,84 @@ interface Seg {
   z2: number;
 }
 
+const CELL = 4;
+
 export class RayField {
   segs: Seg[] = [];
+  /** Wall segments by 4 m grid cell, so a ray cast only tests walls near the car. */
+  private grid = new Map<number, number[]>();
+  private stamp = new Int32Array(0);
+  private stampId = 0;
+  private near = new Int32Array(0);
+  nearCount = 0;
 
   setTrack(track: TrackSpec): void {
     this.segs.length = 0;
+    this.grid.clear();
     for (const wall of track.walls) {
       for (let i = 0; i + 3 < wall.length; i += 2) {
-        this.segs.push({
-          x1: wall[i]!,
-          z1: wall[i + 1]!,
-          x2: wall[i + 2]!,
-          z2: wall[i + 3]!,
-        });
+        const seg = { x1: wall[i]!, z1: wall[i + 1]!, x2: wall[i + 2]!, z2: wall[i + 3]! };
+        const id = this.segs.length;
+        this.segs.push(seg);
+        const x0 = Math.floor(Math.min(seg.x1, seg.x2) / CELL);
+        const x1 = Math.floor(Math.max(seg.x1, seg.x2) / CELL);
+        const z0 = Math.floor(Math.min(seg.z1, seg.z2) / CELL);
+        const z1 = Math.floor(Math.max(seg.z1, seg.z2) / CELL);
+        for (let ix = x0; ix <= x1; ix++) {
+          for (let iz = z0; iz <= z1; iz++) {
+            const k = cellKey(ix, iz);
+            let arr = this.grid.get(k);
+            if (!arr) this.grid.set(k, (arr = []));
+            arr.push(id);
+          }
+        }
       }
     }
+    this.stamp = new Int32Array(this.segs.length);
+    this.stampId = 0;
+    this.near = new Int32Array(this.segs.length);
+  }
+
+  /** Fill `near` with the segments whose grid cells overlap a square of half-size `r` around (x, z). */
+  gather(x: number, z: number, r: number): Int32Array {
+    this.stampId++;
+    let count = 0;
+    const x0 = Math.floor((x - r) / CELL);
+    const x1 = Math.floor((x + r) / CELL);
+    const z0 = Math.floor((z - r) / CELL);
+    const z1 = Math.floor((z + r) / CELL);
+    for (let ix = x0; ix <= x1; ix++) {
+      for (let iz = z0; iz <= z1; iz++) {
+        const arr = this.grid.get(cellKey(ix, iz));
+        if (!arr) continue;
+        for (let k = 0; k < arr.length; k++) {
+          const id = arr[k]!;
+          if (this.stamp[id] === this.stampId) continue;
+          this.stamp[id] = this.stampId;
+          this.near[count++] = id;
+        }
+      }
+    }
+    this.nearCount = count;
+    return this.near;
   }
 
   cast(x: number, z: number, yaw: number, out: Float32Array, offset: number, rng: RNG | null, noise: number): void {
-    const n = this.segs.length;
+    const near = this.gather(x, z, RAY_MAX);
+    const n = this.nearCount;
     for (let r = 0; r < RAY_COUNT; r++) {
       const ang = yaw + -RAY_ARC / 2 + (r / (RAY_COUNT - 1)) * RAY_ARC;
       const dx = Math.cos(ang);
       const dz = Math.sin(ang);
-      let best = RAY_MAX;
+      let bestT = 1;
       const x2 = x + dx * RAY_MAX;
       const z2 = z + dz * RAY_MAX;
       for (let i = 0; i < n; i++) {
-        const s = this.segs[i]!;
+        const s = this.segs[near[i]!]!;
         const hit = segHit(x, z, x2, z2, s.x1, s.z1, s.x2, s.z2);
-        if (hit >= 0 && hit < best) best = hit * RAY_MAX;
+        if (hit >= 0 && hit < bestT) bestT = hit;
       }
+      let best = bestT * RAY_MAX;
       if (rng && noise > 0) {
         if (rng.next() < 0.01 * Math.max(noise, 0.5)) best = RAY_MAX;
         else best = Math.min(RAY_MAX, Math.max(0, best + randn(rng) * 0.01 * noise));
@@ -50,6 +97,10 @@ export class RayField {
       out[offset + r] = best / RAY_MAX;
     }
   }
+}
+
+function cellKey(ix: number, iz: number): number {
+  return (ix + 4096) * 8192 + (iz + 4096);
 }
 
 function segHit(ax: number, az: number, bx: number, bz: number, cx: number, cz: number, dx: number, dz: number): number {

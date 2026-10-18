@@ -32,7 +32,7 @@ describe('ppo', () => {
       for (let t = 0; t < T; t++) {
         const out = policy.act(obs, n);
         obsBuf.set(obs, t * n * OBS_DIM);
-        actBuf.set(out.action, t * n * 2);
+        actBuf.set(out.pre, t * n * 2);
         logBuf.set(out.logp, t * n);
         valBuf.set(out.value, t * n);
         for (let i = 0; i < n; i++) {

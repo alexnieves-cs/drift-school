@@ -7,17 +7,23 @@ import { TelemetryPanel } from './ui/telemetry';
 import { Heatmap } from './ui/heatmaps';
 import { generateTrack } from './track/generate';
 import { sampleAtS } from './track/sample';
-import { buildTrackFromPoints } from './track/build';
+import { buildTrackFromPoints, validateTrack } from './track/build';
+import type { AdaptStats } from './rl/trainer';
 import { encodeTrackHash, decodeTrackHash } from './editor/share';
 import { toFloat } from './editor/stroke';
 import { TrackEditor } from './editor/editor';
-import { openEnv, openLearner } from './workers/pool';
+import { openLearner } from './workers/pool';
 import { saveCheckpoint, loadCheckpoint } from './rl/checkpoint';
-import type { CameraMode, GenStat, TrackSpec } from './shared/types';
+import type { CameraMode, GenStat, TrackSpec, Validation } from './shared/types';
 import type { CarSnap } from './sim/vecEnv';
 
 const params = new URLSearchParams(location.search);
 const view = params.get('view') ?? 'race';
+/** `?cars=` as an integer in [1, 64]; anything else falls back to `fallback`. */
+function carsParam(fallback: number): number {
+  const n = Math.floor(Number(params.get('cars')));
+  return Number.isFinite(n) && n >= 1 ? Math.min(64, n) : fallback;
+}
 
 const app = document.querySelector('#app') as HTMLElement;
 app.innerHTML = `
@@ -175,8 +181,15 @@ function show(poses: Float32Array, n: number, hero: HeroState): void {
   }
 }
 
-function onMetrics(stat: GenStat, tape?: number[]): void {
+function adaptText(a: AdaptStats): string {
+  const pct = (x: number | null) => (x === null ? 'n/a' : `${(x * 100).toFixed(0)}%`);
+  const lap = a.bestLap === null ? 'n/a' : `${a.bestLap.toFixed(1)} s`;
+  return `drawn track: first 64 eps ${pct(a.first64)} · now ${pct(a.completion)} · best ${lap} · procedural ${pct(a.procBefore)} → ${pct(a.procNow)} · ${a.updatesSinceSwap} updates since swap`;
+}
+
+function onMetrics(stat: GenStat, tape?: number[], adaptStats?: AdaptStats | null): void {
   if (tape?.length) tapes.set(stat.gen, Float32Array.from(tape));
+  if (adaptStats) adapt.textContent = adaptText(adaptStats);
   if (stat.bestLap != null) bestLap = bestLap == null ? stat.bestLap : Math.min(bestLap, stat.bestLap);
   board.add(stat);
   charts.push(stat);
@@ -187,7 +200,7 @@ function applyInline(msg: Record<string, unknown>): void {
   if (!inline) return;
   if (msg.type === 'pause') return;
   if (msg.type === 'baseline') inlineModeBaseline = Boolean(msg.on);
-  if (msg.type === 'setStage') inline.curriculum.stage = Number(msg.stage ?? 0);
+  if (msg.type === 'setStage') inline.setStage(Number(msg.stage ?? 0));
   if (msg.type === 'setDR') {
     inline.grip = Number(msg.grip ?? 1);
     inline.massScale = Number(msg.mass ?? 1);
@@ -196,27 +209,29 @@ function applyInline(msg: Record<string, unknown>): void {
   if (msg.type === 'setTrackPool') void swapInline(msg);
 }
 
+let inlineProcedural: TrackSpec[] = [];
 let inlineModeBaseline = false;
 let inlinePaused = false;
 
 async function swapInline(msg: Record<string, unknown>): Promise<void> {
   if (!inline) return;
   const points = Float32Array.from((msg.points as number[]) ?? []);
-  const user = buildTrackFromPoints(points, {
-    halfWidth: Number(msg.halfWidth ?? 1),
-    mu: Number(msg.mu ?? 1),
-    source: 'user',
-    id: 'user-track',
-  });
+  const halfWidth = Number(msg.halfWidth ?? 1);
+  const mu = Number(msg.mu ?? 1);
+  if (!validateTrack(points, halfWidth).ok) {
+    controls.setStatus('track is not valid', 'bad');
+    return;
+  }
+  const user = buildTrackFromPoints(points, { halfWidth, mu, source: 'user' });
   const before = inline.weightHash();
-  inline.queueTrackPool([user, track], true);
+  inline.queueTrackPool([user, ...inlineProcedural], true);
   inline.forceSwap();
   track = user;
   renderer.loadTrack(track);
-  const hash = encodeTrackHash(points, user.samples[0]?.halfWidth ?? 1, user.samples[0]?.mu ?? 1);
-  history.replaceState(null, '', `#${hash}`);
+  heat.reset();
+  history.replaceState(null, '', `#${encodeTrackHash(points, halfWidth, mu)}`);
   adapt.dataset.adapt = `swapped ${user.id} weights ${before === inline.weightHash() ? 'unchanged' : 'CHANGED'}`;
-  document.body.dataset.track = inline.env.trackId(0);
+  document.body.dataset.track = user.id;
 }
 
 async function persist(name: string): Promise<void> {
@@ -228,6 +243,10 @@ async function persist(name: string): Promise<void> {
 }
 
 async function restore(name: string): Promise<void> {
+  if (worker) {
+    worker.postMessage({ type: 'checkpointLoad', name });
+    return;
+  }
   const cp = await loadCheckpoint(name);
   if (!cp || !inline) {
     controls.setStatus(cp ? 'loaded' : 'no checkpoint', cp ? 'loaded' : 'miss');
@@ -243,22 +262,35 @@ function toggleEditor(): void {
   el.hidden = !el.hidden;
 }
 
-let editorState: { track: TrackSpec | null; points: { x: number; z: number }[] } = { track: null, points: [] };
+let editorState: {
+  track: TrackSpec | null;
+  points: { x: number; z: number }[];
+  halfWidth: number;
+  mu: number;
+  validation: Validation;
+} = { track: null, points: [], halfWidth: 1, mu: 1.05, validation: { ok: false, issues: [] } };
 
 function mountEditor(): void {
   const stroke = document.querySelector('#stroke') as HTMLCanvasElement;
+  let editor: TrackEditor | null = null;
   const fit = () => {
     stroke.width = window.innerWidth;
     stroke.height = window.innerHeight;
+    // Resizing clears the canvas, so tell the editor the new size and redraw the stroke.
+    if (editor) {
+      editor.setSize(stroke.width, stroke.height, 0.04);
+      editor.commit();
+    }
   };
   fit();
-  const editor = new TrackEditor(stroke, {
+  editor = new TrackEditor(stroke, {
     width: stroke.width,
     height: stroke.height,
     scale: 0.04,
     onChange: (state) => {
       editorState = state;
-      adapt.textContent = state.validation.ok ? `valid ${state.ms.toFixed(1)} ms` : state.validation.issues.map((i) => i.reason).join(', ');
+      const reasons = [...new Set(state.validation.issues.map((i) => i.reason))];
+      adapt.textContent = state.validation.ok ? `valid ${state.ms.toFixed(1)} ms` : reasons.join(', ');
     },
   });
   if (location.hash.length > 2) {
@@ -274,28 +306,25 @@ function mountEditor(): void {
 
 async function trainOnDrawn(): Promise<void> {
   const built = editorState.track;
-  if (!built) {
-    controls.setStatus('track is not valid', 'bad');
+  if (!built || !editorState.validation.ok) {
+    const reasons = [...new Set(editorState.validation.issues.map((i) => i.reason))];
+    controls.setStatus(reasons.length ? `track is not valid: ${reasons.join(', ')}` : 'draw a track first', 'bad');
     return;
   }
+  // Send the editor's own width and grip. The built samples carry the corner-widened value, which would widen again on every swap.
+  const { halfWidth, mu } = editorState;
   const points = Array.from(toFloat(editorState.points));
-  send({
-    type: 'setTrackPool',
-    points,
-    halfWidth: built.samples[0]?.halfWidth ?? 1,
-    mu: built.samples[0]?.mu ?? 1,
-    fineTune: true,
-  });
+  send({ type: 'setTrackPool', points, halfWidth, mu, fineTune: true });
   track = built;
   renderer.loadTrack(track);
-  const hash = encodeTrackHash(Float32Array.from(points), built.samples[0]?.halfWidth ?? 1, built.samples[0]?.mu ?? 1);
-  history.replaceState(null, '', `#${hash}`);
+  heat.reset();
+  history.replaceState(null, '', `#${encodeTrackHash(Float32Array.from(points), halfWidth, mu)}`);
   (document.querySelector('#editor') as HTMLElement).hidden = true;
   controls.setStatus('training on drawn track', 'adapt');
 }
 
 function ghostLoop(): void {
-  const n = Math.min(64, Number(params.get('cars') ?? 64));
+  const n = carsParam(64);
   const poses = new Float32Array(n * 7);
   let t = 0;
   const step = () => {
@@ -337,32 +366,39 @@ function ghostLoop(): void {
 
 async function startInline(): Promise<void> {
   const { Trainer } = await import('./rl/trainer');
-  const seeds = [1, 2, 3, 4].map((seed) => generateTrack({ seed, stage: 0 }));
-  track = seeds[0]!;
+  inlineProcedural = [1, 2, 3, 4].map((seed) => generateTrack({ seed, stage: 0 }));
+  track = inlineProcedural[0]!;
   renderer.loadTrack(track);
-  inline = new Trainer({ n: Number(params.get('cars') ?? 8), horizon: 32, epochs: 2, minibatch: 256 });
+  inline = new Trainer({ n: carsParam(8), horizon: 64, epochs: 3, minibatch: 128 });
+  // Yield during rollouts so requestAnimationFrame can draw between steps instead of once per update.
+  inline.yieldEvery = 8;
   controls.setStatus('imitating pure pursuit', 'imitating');
-  await inline.init(seeds);
-  await inline.imitate(3);
+  await inline.init(inlineProcedural);
+  await inline.imitate(4);
   controls.setStatus('racing', 'racing');
   document.body.dataset.track = inline.env.trackId(0);
-  const loop = async () => {
+  const render = () => {
     if (!inline) return;
-    if (!inlinePaused && !inlineModeBaseline) {
-      const stat = await inline.update();
-      const tape = inline.replays.get(inline.gen);
-      onMetrics(stat, tape ? Array.from(tape) : undefined);
-    } else if (inlineModeBaseline) {
-      inline.env.step(inline.env.baselineActions());
-    }
     const snap = inline.env.snapshot(0);
-    const poses = inline.env.poses();
-    show(poses, inline.env.n, heroFrom(snap, lastHero ?? blankHero()));
-    if (controls.read().paused) inlinePaused = true;
-    else inlinePaused = false;
-    requestAnimationFrame(() => void loop());
+    show(inline.env.poses(), inline.env.n, heroFrom(snap, lastHero ?? blankHero()));
+    requestAnimationFrame(render);
   };
-  void loop();
+  requestAnimationFrame(render);
+  const train = async () => {
+    for (;;) {
+      if (!inline) return;
+      inlinePaused = controls.read().paused;
+      if (!inlinePaused && !inlineModeBaseline) {
+        const stat = await inline.update();
+        const tape = inline.replays.get(inline.gen);
+        onMetrics(stat, tape ? Array.from(tape) : undefined, inline.adaptStats());
+      } else {
+        if (inlineModeBaseline && !inlinePaused) inline.env.step(inline.env.baselineActions());
+        await new Promise<void>((r) => setTimeout(r, 16));
+      }
+    }
+  };
+  void train();
 }
 
 function blankHero(): HeroState {
@@ -372,19 +408,22 @@ function blankHero(): HeroState {
 
 function startWorker(): void {
   worker = openLearner();
-  const env = openEnv();
-  env.postMessage({ type: 'ping', t: 7 });
+  // Workers post pose frames at about 30 Hz; the page draws the latest one every animation frame.
+  let latest: { poses: Float32Array; n: number; hero: CarSnap | null } | null = null;
+  const render = () => {
+    if (latest) show(latest.poses, latest.n, heroFrom(latest.hero, lastHero ?? blankHero()));
+    requestAnimationFrame(render);
+  };
+  requestAnimationFrame(render);
   worker.onmessage = (ev: MessageEvent) => {
     const msg = ev.data as Record<string, unknown>;
     if (msg.type === 'status') controls.setStatus(String(msg.text), String(msg.text).includes('racing') ? 'racing' : 'live');
     if (msg.type === 'ghosts') {
-      const poses = msg.poses as Float32Array;
-      const hero = heroFrom((msg.hero as CarSnap) ?? null, lastHero ?? blankHero());
       if (typeof msg.bestLap === 'number') bestLap = msg.bestLap;
-      show(poses, Number(msg.n ?? 0), hero);
+      latest = { poses: msg.poses as Float32Array, n: Number(msg.n ?? 0), hero: (msg.hero as CarSnap) ?? null };
       document.body.dataset.track = String(msg.trackId ?? '');
     }
-    if (msg.type === 'metrics') onMetrics(msg.stat as GenStat, msg.tape as number[] | undefined);
+    if (msg.type === 'metrics') onMetrics(msg.stat as GenStat, msg.tape as number[] | undefined, msg.adapt as AdaptStats | null | undefined);
     if (msg.type === 'replayRes') {
       const poses = msg.poses as number[];
       if (poses?.length) {
@@ -394,8 +433,9 @@ function startWorker(): void {
       }
     }
     if (msg.type === 'trackAck') {
-      adapt.dataset.adapt = `track ${String(msg.trackId)} envs ${String(msg.envCount)} hash ${String(msg.hash)}`;
+      adapt.dataset.adapt = `track ${String(msg.trackId)} envs ${String(msg.envCount)} weights ${msg.hash === msg.hashBefore ? 'unchanged' : 'CHANGED'}`;
       document.body.dataset.track = String(msg.trackId);
+      controls.setStatus(`training on drawn track (${String(msg.envCount)} envs)`, 'adapt');
     }
     if (msg.type === 'error') controls.setStatus(String(msg.message), 'bad');
   };
@@ -405,7 +445,7 @@ function startWorker(): void {
     controls.setStatus('worker failed, inline', 'inline');
     void startInline();
   };
-  worker.postMessage({ type: 'init', n: Number(params.get('cars') ?? 8), seeds: [1, 2, 3, 4], stage: 0 });
+  worker.postMessage({ type: 'init', n: carsParam(8), seeds: [1, 2, 3, 4], stage: 0 });
 }
 
 window.addEventListener('keydown', (ev) => {

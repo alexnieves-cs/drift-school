@@ -6,6 +6,7 @@ export interface EpRecord {
   crash: boolean;
   ret: number;
   trackId: string;
+  tRef: number;
   speed: number;
 }
 

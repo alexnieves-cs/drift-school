@@ -34,6 +34,10 @@ export class Curriculum {
     this.windowSize = windowSize;
   }
 
+  resetWindow(): void {
+    this.window = [];
+  }
+
   note(ep: EpOutcome): void {
     this.window.push(ep);
     if (this.window.length > this.windowSize) this.window.shift();

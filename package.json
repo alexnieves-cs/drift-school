@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "bench": "vitest run tests/perf",
+    "bench": "vitest run --config vitest.bench.config.ts",
     "eval": "vite-node scripts/eval.ts --"
   },
   "dependencies": {

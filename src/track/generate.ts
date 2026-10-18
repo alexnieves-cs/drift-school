@@ -156,7 +156,11 @@ function surfaceMus(rng: RNG, stage: number, n: number): number[] {
   return mus;
 }
 
+/** Counts how often the generator gave up on random tracks and used the stadium fallback. Tests assert it stays 0. */
+export const generatorStats = { fallbacks: 0 };
+
 function fallbackOval(seed: number, stage: number): TrackSpec {
+  generatorStats.fallbacks++;
   const rng = makeRng(seed, `fallback/${stage}`);
   const pts = stadium(rng, Math.max(0, stage - 1));
   const len = polygonLength(pts);
@@ -170,6 +174,7 @@ function fallbackOval(seed: number, stage: number): TrackSpec {
   });
   const half = (STAGE_WIDTH[stage] ?? 1) / 2;
   const spec = buildTrackFromPoints(flat, {
+    autoScale: true,
     halfWidth: half,
     mu: stage >= 4 ? 0.85 : 1.1,
     seed,

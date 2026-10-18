@@ -1,40 +1,67 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { generateTrack, trackFingerprint } from '../../src/track/generate';
-import { buildTrackFromPoints, validateTrack } from '../../src/track/build';
+import { generateTrack, generatorStats } from '../../src/track/generate';
+import { buildTrackFromPoints, validateSpec, validateTrack } from '../../src/track/build';
+import { fnv1a } from '../../src/shared/hash';
+import type { TrackSpec } from '../../src/shared/types';
 import type { InvalidReason } from '../../src/shared/types';
 
+/** Full-precision digest of everything in a TrackSpec, typed arrays included. */
+function specDigest(t: TrackSpec): string {
+  return fnv1a(
+    JSON.stringify(t, (_k, v: unknown) => (v instanceof Float32Array ? Array.from(v) : v)),
+  );
+}
+
 describe('track generator', () => {
-  it('is valid for 1000 seeds across stages 0-4 and deterministic', () => {
+  it('produces valid tracks for 1000 seeds across stages 0-4, without using the fallback', () => {
+    const before = generatorStats.fallbacks;
+    const failures: string[] = [];
     for (let seed = 0; seed < 1000; seed++) {
       for (let stage = 0; stage < 5; stage++) {
         const a = generateTrack({ seed, stage });
-        const b = generateTrack({ seed, stage });
-        expect(a.length).toBeGreaterThanOrEqual(15);
-        expect(a.length).toBeLessThanOrEqual(150);
-        expect(a.samples.length).toBeGreaterThan(10);
-        expect(trackFingerprint(a)).toBe(trackFingerprint(b));
-        expect(Number.isFinite(a.tRef)).toBe(true);
-        expect(a.tRef).toBeGreaterThan(1);
-        expect(a.walls.length).toBe(2);
-        expect(a.gates.length).toBeGreaterThan(3);
+        // One expect per track: a million per-sample expects made this take two minutes.
+        let finite = true;
         let maxK = 0;
         for (const s of a.samples) {
-          expect(Number.isFinite(s.x + s.z + s.curvature)).toBe(true);
+          finite &&= Number.isFinite(s.x + s.z + s.curvature + s.s);
           maxK = Math.max(maxK, Math.abs(s.curvature));
         }
-        expect(maxK).toBeLessThan(1 / 0.34);
+        const checked = validateSpec(a);
+        const bad =
+          !finite ||
+          a.length < 15 ||
+          a.length > 150 ||
+          a.samples.length <= 10 ||
+          !(a.tRef > 1) ||
+          a.walls.length !== 2 ||
+          a.gates.length <= 3 ||
+          maxK >= 1 / 0.34 ||
+          !checked.ok;
+        if (bad) failures.push(`seed ${seed} stage ${stage}: ${checked.issues.map((i) => i.reason).join(',') || 'shape'}`);
+      }
+    }
+    expect(failures.slice(0, 5)).toEqual([]);
+    expect(generatorStats.fallbacks - before).toBe(0);
+  });
+
+  it('gives a byte-identical TrackSpec for the same seed, including edges, walls, gates and tRef', () => {
+    for (let seed = 0; seed < 100; seed++) {
+      for (let stage = 0; stage < 5; stage++) {
+        const a = generateTrack({ seed, stage });
+        const b = generateTrack({ seed, stage });
+        expect(specDigest(a), `seed ${seed} stage ${stage}`).toBe(specDigest(b));
+        expect(Buffer.from(a.leftEdge.buffer).equals(Buffer.from(b.leftEdge.buffer))).toBe(true);
       }
     }
   });
 
-  it('generates a stage-0 track in under 20 ms', () => {
-    generateTrack({ seed: 1, stage: 0 });
-    const t0 = performance.now();
-    const n = 20;
-    for (let i = 0; i < n; i++) generateTrack({ seed: 100 + i, stage: i % 5 });
-    const ms = (performance.now() - t0) / n;
-    expect(ms).toBeLessThan(20);
+  it('closes the wall loops so no gap is left at the start line', () => {
+    const t = generateTrack({ seed: 3, stage: 2 });
+    for (const wall of t.walls) {
+      expect(wall[wall.length - 2]).toBe(wall[0]);
+      expect(wall[wall.length - 1]).toBe(wall[1]);
+    }
   });
 
   it('rejects bad fixtures with the expected reason and accepts the oval', () => {

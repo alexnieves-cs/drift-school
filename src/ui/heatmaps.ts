@@ -14,6 +14,12 @@ export class Heatmap {
     parent.appendChild(this.canvas);
   }
 
+  /** Forget the previous track's speeds and crash dots. */
+  reset(): void {
+    this.speeds.clear();
+    this.crashes.length = 0;
+  }
+
   note(track: TrackSpec, s: number, speed: number, crash: boolean, x: number, z: number): void {
     const bin = Math.round(s);
     const prev = this.speeds.get(bin) ?? speed;
