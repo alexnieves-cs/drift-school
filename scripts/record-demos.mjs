@@ -7,7 +7,7 @@
 // Scenes: hairpin   real vehicle, pure-pursuit baseline, dry then ice, POV and chase
 //         race      worker training with 64 cars, timelapse, writes race-run.json
 //         draw      draw a hairpin with the mouse, validate, "train on this", timelapse
-// Env:    BASE_URL (default http://127.0.0.1:5173), CHROME_PATH (a Chromium binary),
+// Env:    BASE_URL (default http://127.0.0.1:5173), CHROME_PATH or PW_CHROMIUM_PATH (a Chromium binary),
 //         RACE_MINUTES (default 4), DRAW_MINUTES (default 3)
 //
 // Files under 5 MB go to docs/media. Larger ones go to release-assets/ for a Release.
@@ -27,20 +27,20 @@ const H = 540;
 mkdirSync(OUT, { recursive: true });
 mkdirSync(BIG, { recursive: true });
 
-async function launch() {
+async function launch(width = W, height = H) {
   const browser = await chromium.launch({
-    executablePath: process.env.CHROME_PATH || undefined,
+    executablePath: process.env.CHROME_PATH || process.env.PW_CHROMIUM_PATH || undefined,
     args: ['--enable-webgl', '--use-gl=angle', '--ignore-gpu-blocklist'],
   });
-  const page = await browser.newPage({ viewport: { width: W, height: H } });
+  const page = await browser.newPage({ viewport: { width, height } });
   page.on('pageerror', (e) => console.warn('pageerror:', e.message.slice(0, 200)));
   return { browser, page };
 }
 
-function encode(dir, name, fps, { gifWidth = 640, gifFps = 10 } = {}) {
+function encode(dir, name, fps, { gifWidth = 720, gifFps = 10 } = {}) {
   const mp4 = join(dir, `${name}.mp4`);
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(fps), '-i', join(dir, '%05d.png'),
-    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '30', '-movflags', '+faststart', mp4]);
+    '-vf', 'scale=1024:-2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '30', '-movflags', '+faststart', mp4]);
   const gif = join(dir, `${name}.gif`);
   const step = Math.max(1, Math.round(fps / gifFps));
   for (let width = gifWidth; width >= 320; width -= 80) {
@@ -96,7 +96,7 @@ async function readBoard(page) {
 
 async function race() {
   const minutes = Number(process.env.RACE_MINUTES ?? 4);
-  const { browser, page } = await launch();
+  const { browser, page } = await launch(1280, 720);
   await page.goto(`${BASE}/?cars=64`);
   await page.waitForSelector('[data-status="racing"]', { timeout: 120_000 });
   const dir = freshDir('race');
@@ -128,7 +128,7 @@ function hairpinStroke(box) {
 
 async function draw() {
   const minutes = Number(process.env.DRAW_MINUTES ?? 3);
-  const { browser, page } = await launch();
+  const { browser, page } = await launch(1280, 720);
   await page.goto(`${BASE}/?cars=16`);
   await page.waitForSelector('[data-status="racing"]', { timeout: 120_000 });
   const dir = freshDir('draw');
