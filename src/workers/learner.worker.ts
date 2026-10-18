@@ -3,7 +3,8 @@ import { generateTrack } from '../track/generate';
 import { buildTrackFromPoints } from '../track/build';
 import { handlePing } from '../shared/messages';
 import { forkCheckpoint, saveCheckpoint } from '../rl/checkpoint';
-import { encodeTrackHash } from '../editor/share';
+import { quantizePoints } from '../editor/share';
+import { FineTune, type FineTuneReport } from '../rl/finetune';
 import type { TrackSpec } from '../shared/types';
 
 interface WorkerScope {
@@ -18,13 +19,29 @@ let paused = true;
 let busy = false;
 let baseline = false;
 let procedural: TrackSpec[] = [];
+/** The hot-swap in progress, if any. While it runs, each loop turn is one `FineTune.step()`. */
+let fine: FineTune | null = null;
+let lastAdaptPost = 0;
+let lastUserSave = 0;
 
 function post(data: unknown): void {
   scope.postMessage(data);
 }
 
+/** SPEC: the ghost stream is 30 Hz. The main thread acks every frame it draws; a main thread that
+ *  is two frames behind (software GL, a busy tab) gets nothing more until it catches up, so the
+ *  message queue cannot grow without bound and `ids` stays current. */
+const GHOST_MIN_MS = 33;
+let lastGhost = 0;
+let unacked = 0;
+
 function publish(): void {
   if (!trainer) return;
+  const now = performance.now();
+  if (now - lastGhost < GHOST_MIN_MS) return;
+  if (unacked >= 2 && now - lastGhost < 500) return;
+  lastGhost = now;
+  unacked++;
   const poses = new Float32Array(trainer.env.poses());
   post({
     type: 'ghosts',
@@ -38,12 +55,38 @@ function publish(): void {
   });
 }
 
+function postAdapt(rep: FineTuneReport, force = false): void {
+  const now = performance.now();
+  if (!force && now - lastAdaptPost < 150) return;
+  lastAdaptPost = now;
+  post({ type: 'adapt', ...rep });
+}
+
+async function maybeSaveUser(rep: FineTuneReport): Promise<void> {
+  if (!trainer || !fine || rep.phase !== 'tune') return;
+  const now = performance.now();
+  if (now - lastUserSave < 5000) return;
+  lastUserSave = now;
+  const weights = trainer.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
+  await saveCheckpoint({ name: fine.user.id, gen: trainer.gen, stage: trainer.curriculum.stage, weights });
+}
+
 async function loop(): Promise<void> {
   if (!trainer || paused || busy) return;
   busy = true;
   try {
     if (baseline) {
       trainer.env.step(trainer.env.baselineActions());
+    } else if (fine && fine.phase !== 'done') {
+      const gen0 = trainer.gen;
+      const rep = await fine.step();
+      if (trainer.gen !== gen0) {
+        const stat = trainer.history[trainer.history.length - 1];
+        const tape = trainer.replays.get(trainer.gen);
+        if (stat) post({ type: 'metrics', stat, tape: tape ? Array.from(tape) : [] });
+      }
+      postAdapt(rep);
+      await maybeSaveUser(rep);
     } else {
       const stat = await trainer.update();
       const tape = trainer.replays.get(trainer.gen);
@@ -56,6 +99,23 @@ async function loop(): Promise<void> {
   }
   busy = false;
   if (!paused) setTimeout(() => void loop(), 0);
+}
+
+/** Posts `trackAck` once every env is on the new track (the hot-swap latency event). */
+async function announceSwap(trackId: string, hashBefore: string): Promise<void> {
+  const mine = fine;
+  while (mine && fine === mine && mine.phase === 'drain') await new Promise((r) => setTimeout(r, 20));
+  if (!mine || fine !== mine || !trainer) return;
+  const rep = mine.report();
+  post({
+    type: 'trackAck',
+    trackId,
+    envCount: rep.envsOnUserAtSwap ?? 0,
+    envTotal: rep.envTotal,
+    latencyMs: rep.latencyMs,
+    hash: rep.weightHashAtDrain,
+    hashBefore,
+  });
 }
 
 async function handle(msg: Record<string, unknown>): Promise<void> {
@@ -77,6 +137,10 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
     void loop();
     return;
   }
+  if (msg.type === 'ghostAck') {
+    unacked = Math.max(0, unacked - 1);
+    return;
+  }
   if (!trainer) return;
   if (msg.type === 'pause') {
     paused = Boolean(msg.paused);
@@ -95,23 +159,31 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
     post({ type: 'replayRes', gen, poses: tape ? Array.from(tape) : [], n: tape ? tape.length / 7 : 0 });
   }
   if (msg.type === 'setTrackPool') {
-    const points = Float32Array.from((msg.points as number[]) ?? []);
+    // Snap to mm first so the track id survives a round trip through the URL hash.
+    const points = quantizePoints((msg.points as number[]) ?? []);
     const halfWidth = Number(msg.halfWidth ?? 1);
     const mu = Number(msg.mu ?? 1);
-    const user = buildTrackFromPoints(points, { halfWidth, mu, source: 'user', id: 'user-track' });
-    const before = trainer.weightHash();
-    trainer.queueTrackPool([user, ...procedural], Boolean(msg.fineTune));
-    trainer.forceSwap();
-    const hash = encodeTrackHash(points, halfWidth, mu).slice(0, 16);
-    await forkCheckpoint('base', `user-${hash}`);
-    post({
-      type: 'trackAck',
-      trackId: trainer.env.trackId(0),
-      envCount: trainer.env.trackIds().filter((id) => id === user.id).length || trainer.env.n,
-      hash: trainer.weightHash(),
-      hashBefore: before,
-    });
-    publish();
+    const t0 = performance.now();
+    const user = buildTrackFromPoints(points, { halfWidth, mu, source: 'user' });
+    fine?.stop();
+    const hashBefore = trainer.weightHash();
+    // Snapshot the pre-swap model now; it is saved as 'base' and forked to user-<hash> below.
+    const weights = trainer.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
+    const gen = trainer.gen;
+    const stage = trainer.curriculum.stage;
+    // The swap itself: nothing resets until each env finishes its episode (FineTune drains them).
+    fine = new FineTune(trainer, { user, procedural });
+    fine.start();
+    lastUserSave = performance.now();
+    post({ type: 'swapStart', trackId: user.id, hashBefore, ms: performance.now() - t0 });
+    postAdapt(fine.report(), true);
+    paused = false;
+    baseline = false;
+    void loop();
+    void announceSwap(user.id, hashBefore);
+    await saveCheckpoint({ name: 'base', gen, stage, weights });
+    await forkCheckpoint('base', user.id);
+    return;
   }
   if (msg.type === 'checkpointSave') {
     const name = String(msg.name ?? 'manual');

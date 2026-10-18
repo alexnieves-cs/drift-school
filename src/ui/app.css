@@ -88,3 +88,10 @@ label { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0
   #right { display: none; }
   #bottom { display: none; }
 }
+
+/* Adaptation panel (hot-swap metrics). */
+.adaptation { border-top: 1px solid var(--line); padding-top: 0.45rem; font-size: 0.75rem; color: var(--muted); }
+.adaptation[hidden] { display: none; }
+.adaptation h3 { margin: 0 0 0.25rem; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); }
+.adaptation p { margin: 0 0 0.15rem; }
+.adaptation .spark { width: 100%; height: 36px; color: var(--amber); background: #0c1116; border-radius: 4px; }
