@@ -32,6 +32,7 @@ Differences from the SPEC diagram:
 
 - The learner worker owns the rollout and the update. `src/workers/env.worker.ts` can step a `VecEnv` on its own and answers `setTrackPool`, but the page does not run a four-worker `SharedArrayBuffer` farm.
 - Rapier is used by the keyboard drive page (`/dev/drive.html`) for wall contact. `VecEnv` bounces cars off the wall polylines with a restitution impulse instead of stepping a Rapier world per car.
+- The learner streams pose frames to the page at about 30 Hz while a rollout runs, so ghosts keep moving between PPO updates.
 - Cross-origin isolation headers come from the Vite dev and preview servers. On GitHub Pages, which cannot set headers, `public/coi-serviceworker.js` rewrites responses and the page reloads once.
 
 ## Modules
@@ -82,11 +83,11 @@ Reward and termination live in `src/sim/reward.ts`: progress along the centerlin
 
 The network is an MLP, 48→128→128 with tanh, a mean head for the two actions with a learned log-std, and a separate value network of the same size. PPO uses GAE (λ 0.95, γ 0.99), a 0.2 clip, Adam at 3e-4, advantage normalization and an entropy bonus.
 
-**Imitation warm start.** Before the first PPO update the trainer regresses the policy's mean action toward the pure-pursuit controller on the current track pool (`Trainer.imitate`). From-scratch PPO at the throughput of CPU TF.js did not learn laps in a few minutes, so every run starts from that cloned policy. See [BENCHMARKS.md](BENCHMARKS.md) for what training does after that.
+**Imitation warm start.** Before the first PPO update the trainer regresses the policy's mean action toward the pure-pursuit controller on the current track pool (`Trainer.imitate`), then runs a few critic-only updates so a random value head cannot wreck it. From-scratch PPO at the throughput of CPU TF.js did not learn laps in a few minutes, so every run starts from that cloned policy. See [BENCHMARKS.md](BENCHMARKS.md) for what training does after that.
 
 **Curriculum.** Five stages (`src/rl/curriculum.ts`) with a promotion rule on recent completion and, at stage 2, lap time against `tRef`. Stage sampling replays earlier stages 20% of the time.
 
-**Track mix and hot-swap.** `TrackMix` holds a weighted pool. "Train on this" posts `setTrackPool` with the drawn control points; the learner builds the track, queues a pool of the drawn track plus the procedural ones with `fineTune: true`, and resets the envs onto it. Fine-tune mode weights the pool 70% drawn and 30% procedural, raises the entropy coefficient to 0.02 for 20 updates and restarts the learning rate at 3e-4. `Trainer.forceSwap` throws if the weight hash changes across a swap, and the checkpoint is forked to `user-<hash>` in IndexedDB so the base model survives.
+**Track mix and hot-swap.** `TrackMix` holds a weighted pool. "Train on this" posts `setTrackPool` with the drawn control points; the learner waits for the current update to finish (messages that change the trainer are queued, so a rollout never straddles a swap), builds the track, queues a pool of the drawn track plus the procedural ones with `fineTune: true`, and resets the envs onto it. Fine-tune mode weights the pool 70% drawn and 30% procedural, raises the entropy coefficient to 0.02 for 20 updates and restarts the learning rate at 3e-4. `Trainer.forceSwap` throws if the weight hash changes across a swap, and the checkpoint is forked to `user-<hash>` in IndexedDB so the base model survives.
 
 ## Rendering
 

@@ -156,7 +156,7 @@ async function draw() {
   const adapt = [];
   while (Date.now() - t0 < minutes * 60_000) {
     await shot();
-    adapt.push({ t: Math.round((Date.now() - t0) / 1000), adapt: await page.evaluate(() => document.querySelector('.adapt')?.dataset.adapt ?? ''), track: await page.evaluate(() => document.body.dataset.track ?? ''), board: (await readBoard(page)).slice(0, 1) });
+    adapt.push({ t: Math.round((Date.now() - t0) / 1000), adapt: await page.evaluate(() => document.querySelector('.adapt')?.dataset.adapt ?? ''), text: ((await page.locator('.adapt').first().textContent()) ?? '').trim(), track: await page.evaluate(() => document.body.dataset.track ?? ''), board: (await readBoard(page)).slice(0, 1) });
     await page.waitForTimeout(800);
   }
   await browser.close();

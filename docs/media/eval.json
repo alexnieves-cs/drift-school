@@ -1,0 +1,33 @@
+{
+  "quick": false,
+  "rows": [
+    {
+      "milestone": "M2",
+      "test": "Stage 0 lap completion, headless, held-out seeds",
+      "target": ">= 80% within 180 s",
+      "measured": "100% (16/16) after 6 s",
+      "pass": true
+    },
+    {
+      "milestone": "M4",
+      "test": "Hot-swap: all envs on the new track",
+      "target": "<= 15 s",
+      "measured": "not measured",
+      "pass": null
+    },
+    {
+      "milestone": "M3",
+      "test": "64 ghost cars frame rate",
+      "target": ">= 50 fps",
+      "measured": "not measured",
+      "pass": null
+    },
+    {
+      "milestone": "M5",
+      "test": "Eval matrix completion (seeds x surfaces x DR)",
+      "target": ">= 70%",
+      "measured": "not measured",
+      "pass": null
+    }
+  ]
+}

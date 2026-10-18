@@ -1,0 +1,11 @@
+{
+  "node": "v22.22.0",
+  "vehicleStepMsMedian": 0.0243,
+  "vecEnvStepsPerSec": {
+    "vecEnv n=8 car-steps/s": 9918,
+    "vecEnv n=32 car-steps/s": 11257,
+    "vecEnv n=64 car-steps/s": 11169
+  },
+  "trackGenMsMedian": 1.2,
+  "validateOvalMsMedian": 0.89
+}
