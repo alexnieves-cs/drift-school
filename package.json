@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "bench": "vitest run --config vitest.bench.config.ts",
-    "eval": "vite-node scripts/eval.ts --"
+    "eval": "vite-node scripts/eval.ts --",
+    "media": "vite-node scripts/media.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.14.0",

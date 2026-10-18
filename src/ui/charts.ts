@@ -5,7 +5,7 @@ import type { GenStat } from '../shared/types';
 export class MetricCharts {
   private plots: uPlot[] = [];
   private xs: number[] = [];
-  private series: number[][] = [[], [], [], [], []];
+  private series: (number | null)[][] = [[], [], [], [], []];
 
   constructor(parent: HTMLElement) {
     const labels = ['return', 'completion', 'entropy', 'steps/s', 'value loss'];
@@ -35,8 +35,9 @@ export class MetricCharts {
 
   push(stat: GenStat): void {
     this.xs.push(stat.gen);
-    this.series[0]!.push(stat.meanReturn);
-    this.series[1]!.push(stat.completion);
+    // An update with no finished episode has nothing to say about return or completion: leave a gap.
+    this.series[0]!.push(stat.episodes ? stat.meanReturn : null);
+    this.series[1]!.push(stat.episodes ? stat.completion : null);
     this.series[2]!.push(stat.entropy ?? 0);
     this.series[3]!.push(stat.stepsPerSec ?? 0);
     this.series[4]!.push(stat.valueLoss ?? 0);

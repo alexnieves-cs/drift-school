@@ -8,3 +8,4 @@ playwright-report
 coverage
 *.tsbuildinfo
 eval-report.json
+.media-frames

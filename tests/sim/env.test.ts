@@ -94,3 +94,15 @@ describe('vec env observations', () => {
     expect(env.obs[OBS.TIME_LEFT]).toBeCloseTo(1 - k / cap, 5);
   });
 });
+
+describe('vec env episode records', () => {
+  it('does not count a completed lap as a crash', () => {
+    const track = generateTrack({ seed: 3, stage: 0 });
+    const env = new VecEnv(1);
+    env.reset([track], [cfg(track, { lapsTarget: 1 })]);
+    for (let k = 0; k < stepCapFor(track.length, 1) && env.finished.length === 0; k++) env.step(env.baselineActions());
+    const ep = env.finished[0]!;
+    expect(ep.lap).toBe(true);
+    expect(ep.crash).toBe(false);
+  });
+});

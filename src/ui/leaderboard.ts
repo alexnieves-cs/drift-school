@@ -22,7 +22,7 @@ export class Leaderboard {
     const tr = document.createElement('tr');
     tr.dataset.gen = String(stat.gen);
     const fmt = (v: number | null) => (v == null ? '—' : v.toFixed(2));
-    tr.innerHTML = `<td>${stat.gen}</td><td>${fmt(stat.bestLap)}</td><td>${fmt(stat.meanLap)}</td><td>${(stat.completion * 100).toFixed(0)}%</td><td>${(stat.crashRate * 100).toFixed(0)}%</td><td>${stat.topSpeed.toFixed(1)}</td>`;
+    tr.innerHTML = `<td>${stat.gen}</td><td>${fmt(stat.bestLap)}</td><td>${fmt(stat.meanLap)}</td><td>${stat.episodes ? `${(stat.completion * 100).toFixed(0)}%` : '—'}</td><td>${stat.episodes ? `${(stat.crashRate * 100).toFixed(0)}%` : '—'}</td><td>${stat.episodes ? stat.topSpeed.toFixed(1) : '—'}</td>`;
     tr.addEventListener('click', () => this.onPick(stat.gen));
     this.body.prepend(tr);
     this.parent.dataset.rows = String(this.rows.length);

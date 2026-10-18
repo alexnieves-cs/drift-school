@@ -252,7 +252,8 @@ export class VecEnv {
         this.finished.push({
           lap: slot.lap >= 1,
           lapTime: slot.lap >= 1 ? slot.lastLapTime : undefined,
-          crash: slot.book.crashed || off,
+          // A lap that touched a wall is still a completed lap; a crash is an episode that ended without one.
+          crash: slot.lap < 1 && (slot.book.crashed || off),
           ret: slot.returning,
           trackId: slot.track.id,
           tRef: slot.track.tRef,
