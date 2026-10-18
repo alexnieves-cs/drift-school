@@ -11,6 +11,8 @@ export default defineConfig({
     headless: true,
     viewport: { width: 1280, height: 720 },
     launchOptions: {
+      // Set PW_CHROMIUM_PATH to reuse a system Chromium instead of the pinned Playwright download.
+      executablePath: process.env.PW_CHROMIUM_PATH || undefined,
       args: ['--enable-webgl', '--use-gl=angle', '--ignore-gpu-blocklist'],
     },
   },
