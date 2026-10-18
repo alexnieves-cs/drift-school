@@ -17,8 +17,8 @@ import type { Trainer } from './trainer';
  *                is the zero-shot result.
  *  3. tune       The pool becomes 70% user track / 30% procedural replay (TrackMix.startFineTune:
  *                entropy 0.02 for 20 PPO updates, LR warm restart). Each finished episode draws
- *                its next track from that pool. One `step()` is `imitationPerPpo` DAgger batches
- *                followed by one PPO update, after `imitationWarmup` batches of DAgger alone.
+ *                its next track from that pool. One `step()` is one PPO update followed by
+ *                `imitationPerPpo` DAgger batches, after `imitationWarmup` batches of DAgger alone.
  *
  * About the DAgger part, plainly: the adaptation is NOT pure reinforcement learning. A DAgger
  * batch rolls the current policy (the pure-pursuit baseline drives a `beta` fraction of the
@@ -357,20 +357,26 @@ export class FineTune {
       const t = this.now();
       const warming = this.mode === 'mixed' && this.r.imitationBatches < this.imitationWarmup;
       const batches = this.mode === 'ppo' ? 0 : this.mode === 'imitation' ? 1 : this.imitationPerPpo;
+      // PPO first, then the DAgger batches: a PPO update with a critic that has never seen this
+      // track can knock a good policy over, and the imitation batches right after repair it, so
+      // the weights at the end of a step (what the user sees, what the probes measure) are the
+      // repaired ones. Starting a step with PPO is what the SPEC's "interleave" leaves open.
+      this.seen = trainer.env.finished.length;
+      if (this.mode !== 'imitation' && !warming) {
+        await trainer.update();
+        this.r.ppoUpdates++;
+        // Only episodes from the policy's own PPO rollout count toward the completion shown to
+        // the user; episodes that finish during a DAgger batch had the pure-pursuit car driving
+        // part of the time. (Imitation-only mode has no PPO rollout, so it counts all of them.)
+        this.collect();
+      }
       for (let b = 0; b < batches; b++) {
         this.imitator.batch(trainer, this.beta);
         this.r.imitationBatches++;
       }
-      // Episodes that finished during a DAgger batch had the pure-pursuit car driving part of
-      // the time, so they do not count toward the completion shown to the user. Only episodes
-      // from the policy's own PPO rollouts do (imitation-only mode has none, so it counts all).
-      if (this.mode !== 'imitation') this.seen = trainer.env.finished.length;
-      if (this.mode !== 'imitation' && !warming) {
-        await trainer.update();
-        this.r.ppoUpdates++;
-      }
+      if (this.mode === 'imitation') this.collect();
+      else this.seen = trainer.env.finished.length;
       this.r.steps++;
-      this.collect();
       this.r.tuneMs += this.now() - t;
     }
     return this.report();
