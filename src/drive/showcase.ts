@@ -8,18 +8,13 @@ import { nearestSample } from '../track/sample';
 import { Vehicle } from '../sim/car/vehicle';
 import { defaultCarParams, cloneCar } from '../sim/car/params';
 import { CONTROL_DT } from '../shared/constants';
+import { HAIRPIN } from './hairpin';
 import type { CameraMode, TrackSpec } from '../shared/types';
 
 const params = new URLSearchParams(location.search);
 const mus = (params.get('mus') ?? '1.1,0.4').split(',').map(Number);
 const manual = params.get('manual') === '1';
 const cam = (params.get('cam') ?? 'pov') as CameraMode;
-
-/** A valid closed loop with a tight U-turn at one end (checked by validateTrack in tests). */
-export const HAIRPIN = [
-  [0, -5], [4, -5], [8, -5], [11.5, -4.4], [13.8, -2.6], [14.6, 0], [13.8, 2.6], [11.5, 4.4],
-  [8, 5], [4, 5], [0, 5], [-4, 5], [-8, 5], [-12, 3.6], [-14, 0], [-12, -3.6], [-8, -5], [-4, -5], [0, -5],
-].flat();
 
 const root = document.querySelector('#showcase') as HTMLElement;
 root.innerHTML = `<canvas id="view"></canvas><div id="hud-host"></div><div id="caption" class="caption"></div>`;
