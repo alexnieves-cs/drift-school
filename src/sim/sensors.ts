@@ -4,51 +4,130 @@ import type { RNG } from '../shared/rng';
 import { randn } from '../shared/rng';
 import { curvaturesAhead, nearestSample } from '../track/sample';
 import type { Vehicle } from './car/vehicle';
+import { getWallGrid, type WallGrid } from './wallGrid';
 
-interface Seg {
-  x1: number;
-  z1: number;
-  x2: number;
-  z2: number;
-}
+/**
+ * Flags that change what the sensors report. Defaults reproduce the behavior the policy was
+ * trained against. See NOTES/phys.md ("ray bug").
+ */
+export const SENSOR_FLAGS = {
+  /**
+   * false (default): legacy rule. Every segment the ray crosses is visited in wall order and
+   * `hit < best` compares a fraction t in [0,1] against `best` in metres, so a farther crossing
+   * visited later can overwrite a nearer one. true: the real nearest hit.
+   */
+  nearestRay: false,
+};
 
 export class RayField {
-  segs: Seg[] = [];
+  private grid: WallGrid | null = null;
+  private hitId = new Int32Array(64);
+  private hitT = new Float64Array(64);
 
   setTrack(track: TrackSpec): void {
-    this.segs.length = 0;
-    for (const wall of track.walls) {
-      for (let i = 0; i + 3 < wall.length; i += 2) {
-        this.segs.push({
-          x1: wall[i]!,
-          z1: wall[i + 1]!,
-          x2: wall[i + 2]!,
-          z2: wall[i + 3]!,
-        });
-      }
-    }
+    this.grid = getWallGrid(track.walls);
   }
 
   cast(x: number, z: number, yaw: number, out: Float32Array, offset: number, rng: RNG | null, noise: number): void {
-    const n = this.segs.length;
+    const g = this.grid;
     for (let r = 0; r < RAY_COUNT; r++) {
       const ang = yaw + -RAY_ARC / 2 + (r / (RAY_COUNT - 1)) * RAY_ARC;
       const dx = Math.cos(ang);
       const dz = Math.sin(ang);
-      let best = RAY_MAX;
-      const x2 = x + dx * RAY_MAX;
-      const z2 = z + dz * RAY_MAX;
-      for (let i = 0; i < n; i++) {
-        const s = this.segs[i]!;
-        const hit = segHit(x, z, x2, z2, s.x1, s.z1, s.x2, s.z2);
-        if (hit >= 0 && hit < best) best = hit * RAY_MAX;
-      }
+      let best = g ? this.castOne(g, x, z, x + dx * RAY_MAX, z + dz * RAY_MAX, dx, dz) : RAY_MAX;
       if (rng && noise > 0) {
         if (rng.next() < 0.01 * Math.max(noise, 0.5)) best = RAY_MAX;
         else best = Math.min(RAY_MAX, Math.max(0, best + randn(rng) * 0.01 * noise));
       }
       out[offset + r] = best / RAY_MAX;
     }
+  }
+
+  /** Distance in metres along one ray, walking only the grid cells the ray crosses. */
+  private castOne(g: WallGrid, x: number, z: number, x2: number, z2: number, dx: number, dz: number): number {
+    const inv = g.inv;
+    const fx = (x - g.ox) * inv;
+    const fz = (z - g.oz) * inv;
+    let ix = Math.floor(fx);
+    let iz = Math.floor(fz);
+    const adx = Math.abs(dx);
+    const adz = Math.abs(dz);
+    const stepX = dx > 0 ? 1 : -1;
+    const stepZ = dz > 0 ? 1 : -1;
+    const tDx = adx > 1e-12 ? 1 / adx : Infinity;
+    const tDz = adz > 1e-12 ? 1 / adz : Infinity;
+    let tMx = adx > 1e-12 ? (dx > 0 ? ix + 1 - fx : fx - ix) * tDx : Infinity;
+    let tMz = adz > 1e-12 ? (dz > 0 ? iz + 1 - fz : fz - iz) * tDz : Infinity;
+    const L = RAY_MAX * inv + 1e-6;
+    const { nx, nz, rayOff, rayIds, seg, stamp } = g;
+    let tick = ++g.tick;
+    if (tick > 2_000_000_000) {
+      stamp.fill(0);
+      g.tick = tick = 1;
+    }
+    let nHits = 0;
+    for (;;) {
+      if (ix >= 0 && ix < nx && iz >= 0 && iz < nz) {
+        const c = iz * nx + ix;
+        for (let p = rayOff[c]!, e = rayOff[c + 1]!; p < e; p++) {
+          const id = rayIds[p]!;
+          if (stamp[id] === tick) continue;
+          stamp[id] = tick;
+          const k = id * 4;
+          const hit = segHit(x, z, x2, z2, seg[k]!, seg[k + 1]!, seg[k + 2]!, seg[k + 3]!);
+          if (hit >= 0) {
+            if (nHits === this.hitId.length) this.growHits();
+            this.hitId[nHits] = id;
+            this.hitT[nHits] = hit;
+            nHits++;
+          }
+        }
+      }
+      if (tMx < tMz) {
+        if (tMx > L) break;
+        ix += stepX;
+        tMx += tDx;
+      } else {
+        if (tMz > L) break;
+        iz += stepZ;
+        tMz += tDz;
+      }
+    }
+    let best = RAY_MAX;
+    if (nHits === 0) return best;
+    if (SENSOR_FLAGS.nearestRay) {
+      for (let k = 0; k < nHits; k++) best = Math.min(best, this.hitT[k]! * RAY_MAX);
+      return best;
+    }
+    // Legacy rule needs the hits in wall order. nHits is tiny, so insertion sort by id.
+    const ids = this.hitId;
+    const ts = this.hitT;
+    for (let a = 1; a < nHits; a++) {
+      const id = ids[a]!;
+      const t = ts[a]!;
+      let b = a - 1;
+      while (b >= 0 && ids[b]! > id) {
+        ids[b + 1] = ids[b]!;
+        ts[b + 1] = ts[b]!;
+        b--;
+      }
+      ids[b + 1] = id;
+      ts[b + 1] = t;
+    }
+    for (let k = 0; k < nHits; k++) {
+      const hit = ts[k]!;
+      if (hit < best) best = hit * RAY_MAX;
+    }
+    return best;
+  }
+
+  private growHits(): void {
+    const id = new Int32Array(this.hitId.length * 2);
+    const t = new Float64Array(this.hitT.length * 2);
+    id.set(this.hitId);
+    t.set(this.hitT);
+    this.hitId = id;
+    this.hitT = t;
   }
 }
 

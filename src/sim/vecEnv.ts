@@ -7,12 +7,14 @@ import { Vehicle } from './car/vehicle';
 import { defaultCarParams } from './car/params';
 import { RayField, fillObservation, wheelsOff } from './sensors';
 import { EpisodeBook, scoreStep } from './reward';
+import { getWallGrid, resolveWallContact, type WallGrid, type WallResult } from './wallGrid';
 
 interface Slot {
   car: Vehicle;
   track: TrackSpec;
   cfg: EpisodeConfig;
   rays: RayField;
+  grid: WallGrid;
   book: EpisodeBook;
   hint: number;
   prevS: number;
@@ -60,6 +62,7 @@ export class VecEnv {
   readonly poseBuf: Float32Array;
   readonly infos: StepInfo[];
   private slots: Slot[] = [];
+  private readonly wallOut: WallResult = { contact: false, hit: false, impact: 0 };
   /** Episodes finished since the last consume. */
   readonly finished: { lap: boolean; lapTime?: number; crash: boolean; ret: number; trackId: string; speed: number }[] = [];
 
@@ -100,6 +103,7 @@ export class VecEnv {
         track,
         cfg,
         rays: new RayField(),
+        grid: getWallGrid(track.walls),
         book: new EpisodeBook(),
         hint: 0,
         prevS: 0,
@@ -236,51 +240,9 @@ export class VecEnv {
 
   /** Cheap polyline resolution. Same wall geometry Rapier uses for the driven car. */
   private wallPush(slot: Slot): { hit: boolean; impact: number } {
-    const margin = 0.18;
-    let hit = false;
-    let impact = 0;
-    const walls = slot.track.walls;
-    for (let w = 0; w < walls.length; w++) {
-      const poly = walls[w]!;
-      for (let i = 0; i + 3 < poly.length; i += 2) {
-        const x1 = poly[i]!;
-        const z1 = poly[i + 1]!;
-        const x2 = poly[i + 2]!;
-        const z2 = poly[i + 3]!;
-        const dx = x2 - x1;
-        const dz = z2 - z1;
-        const len2 = dx * dx + dz * dz || 1;
-        let t = ((slot.car.px - x1) * dx + (slot.car.pz - z1) * dz) / len2;
-        t = Math.max(0, Math.min(1, t));
-        const cx = x1 + dx * t;
-        const cz = z1 + dz * t;
-        const ox = slot.car.px - cx;
-        const oz = slot.car.pz - cz;
-        const dist = Math.hypot(ox, oz);
-        if (dist < margin) {
-          hit = true;
-          const nx = ox / (dist || 1);
-          const nz = oz / (dist || 1);
-          slot.car.px += nx * (margin - dist);
-          slot.car.pz += nz * (margin - dist);
-          const cy = Math.cos(slot.car.yaw);
-          const sy = Math.sin(slot.car.yaw);
-          const worldVx = cy * slot.car.vx - sy * slot.car.vz;
-          const worldVz = sy * slot.car.vx + cy * slot.car.vz;
-          const vn = worldVx * nx + worldVz * nz;
-          if (vn < 0) {
-            const e = 0.3;
-            const wx = worldVx - (1 + e) * vn * nx;
-            const wz = worldVz - (1 + e) * vn * nz;
-            slot.car.vx = cy * wx + sy * wz;
-            slot.car.vz = -sy * wx + cy * wz;
-            impact = Math.max(impact, -vn);
-          }
-        }
-      }
-    }
-    slot.contact = hit;
-    return { hit: impact > 0.4, impact };
+    resolveWallContact(slot.car, slot.grid, this.wallOut);
+    slot.contact = this.wallOut.contact;
+    return this.wallOut;
   }
 
   private writeObs(i: number): void {
@@ -373,6 +335,7 @@ export class VecEnv {
       slot.track = tracks[i % tracks.length]!;
       slot.cfg = { ...cfgs[i % cfgs.length]!, trackId: slot.track.id };
       slot.rays.setTrack(slot.track);
+      slot.grid = getWallGrid(slot.track.walls);
     }
   }
 }
