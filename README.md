@@ -7,7 +7,7 @@
 
 ![Drawing a track, hot-swapping it into training, and the cars lapping it](docs/media/demo-draw-hairpin.gif)
 
-**[Live demo](https://alexnieves-cs.github.io/drift-school/)** · [Architecture](docs/ARCHITECTURE.md) · [Benchmarks](docs/BENCHMARKS.md) · [Spec](SPEC.md) · sibling project: [frontier-fly](https://github.com/alexnieves-cs/frontier-fly)
+**[Live demo](https://alexnieves-cs.github.io/drift-school/)** · [Architecture](docs/ARCHITECTURE.md) · [Benchmarks](docs/BENCHMARKS.md) · [Acceptance status](docs/ACCEPTANCE.md) · [Spec](SPEC.md) · sibling project: [frontier-fly](https://github.com/alexnieves-cs/frontier-fly)
 
 The cars run on a vehicle model written for this project: Pacejka tires, four spring-damper suspensions with real weight transfer, a motor curve and a rate-limited steering servo, stepped at 500 Hz. A PPO policy trains in a Web Worker beside it, rendering is Three.js (WebGPU when the browser offers it, WebGL2 otherwise), and everything is deterministic from a seed. Draw a loop, press **Train on this**, and the new track is hot-swapped into the running training session without touching the weights.
 
@@ -55,7 +55,7 @@ Every number comes from a script in this repository. [docs/BENCHMARKS.md](docs/B
 | Surface x randomization matrix (8 seeds x asphalt, carpet, dirt x DR low, high) | 99% (143/144) | `npm run eval` |
 | 64 ghost cars at 50 fps | not measured, needs a GPU (software GL gives about 7 fps) | `npm run eval` prints `skip` |
 
-Measured in a 4-vCPU Linux container with software rendering. Frame rate on a real GPU is not in this table.
+Measured in a 4-vCPU Linux container with software rendering. Frame rate on a real GPU is not in this table. The full line-by-line acceptance status, including what is weak evidence, is in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md).
 
 ## How training works
 
@@ -123,7 +123,7 @@ Useful URLs: `/?cars=64` for the 64-car view, `/?view=ghosts` for a scripted gho
 ## Honest limits
 
 - Training does not start from scratch. It starts from a pure-pursuit clone, so "learned to race" here means "fine-tuned a cloned driver", and the stage-0 completion above is mostly the clone's doing.
-- Drift is not demonstrated on a track. The physics test that scripts a drift only checks that rear slip passes 15 degrees and that countersteer stops the spin.
+- Drift is not demonstrated on a track. In the physics test, with rear grip scaled to 0.8 the car holds a sustained slide (42 to 46 degrees of rear slip) and recovers when the steering is released. With rear grip at 0.5 it spins out. That is a slide, not a controlled drift, and no controller here drives one around a corner.
 - In the multi-car view the cars train on a pool of four generated tracks but only one track is drawn, so some ghosts look like they are driving off the road. They are on a track you cannot see.
 - Throughput is one process. The spec's four-worker `SharedArrayBuffer` farm and 20k steps/s are not built.
 - The renderer has WebGPU and WebGL2 paths and a Low and a High preset. In headless software GL the High preset rendered a black frame, so every clip uses Low. GTAO, TAA, cascaded shadows and bloom from the spec are not implemented.
@@ -133,7 +133,7 @@ Useful URLs: `/?cars=64` for the 64-car view, `/?view=ghosts` for a scripted gho
 
 - Built by [Alex Nieves](https://github.com/alexnieves-cs) with Claude Code.
 - Sibling project: [frontier-fly](https://github.com/alexnieves-cs/frontier-fly), the in-browser drone explorer whose stack and structure this reuses.
-- Libraries: [three.js](https://threejs.org) (MIT), [TensorFlow.js](https://www.tensorflow.org/js) (Apache-2.0), [Rapier](https://rapier.rs) (Apache-2.0), [uPlot](https://github.com/leeoniya/uPlot) (MIT), [Comlink](https://github.com/GoogleChromeLabs/comlink) (Apache-2.0), [fflate](https://github.com/101arrowz/fflate) (MIT).
+- Full dependency and technique credits are in [CREDITS.md](CREDITS.md). Main libraries: [three.js](https://threejs.org) (MIT), [TensorFlow.js](https://www.tensorflow.org/js) (Apache-2.0), [Rapier](https://rapier.rs) (Apache-2.0), [uPlot](https://github.com/leeoniya/uPlot) (MIT), [Comlink](https://github.com/GoogleChromeLabs/comlink) (Apache-2.0), [fflate](https://github.com/101arrowz/fflate) (MIT).
 - The cross-origin-isolation service worker follows the approach of [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker).
 - Nothing in the repository is third-party art. The track, car and HUD geometry are drawn in code.
 
