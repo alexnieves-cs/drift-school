@@ -236,7 +236,7 @@ export const hotswap: Section = async ({ quick, log }) => {
     note:
       `${quick ? 'quick mode: ' : ''}${main.trainSeconds.toFixed(0)} s of training${quickNote}, ${r.ppoUpdates} PPO updates + ${dagShare} DAgger batches ` +
       `(3 per PPO update), probes (user/held-out procedural) ${main.probes || 'none'}. Adaptation is imitation of the pure-pursuit baseline (DAgger on the user track and the replay pool) interleaved with PPO; ` +
-      `see the ablation line for what each contributes.`,
+      `${quick ? 'The ablation that splits imitation from PPO runs only in full mode.' : 'The attribution below splits imitation from PPO.'}`,
   });
   const ratio = (post: number, pre: number) => (pre > 0 ? post / pre : post >= 0 ? 1 : 0);
   const ratioHeld = ratio(main.after.heldProc, before.heldProc);

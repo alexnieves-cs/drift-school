@@ -18,7 +18,7 @@ import type { Trainer } from './trainer';
  *  3. tune       The pool becomes 70% user track / 30% procedural replay (TrackMix.startFineTune:
  *                entropy 0.02 for 20 PPO updates, LR warm restart). Each finished episode draws
  *                its next track from that pool. One `step()` is `imitationPerPpo` DAgger batches
- *                followed by one PPO update.
+ *                followed by one PPO update, after `imitationWarmup` batches of DAgger alone.
  *
  * About the DAgger part, plainly: the adaptation is NOT pure reinforcement learning. A DAgger
  * batch rolls the current policy (the pure-pursuit baseline drives a `beta` fraction of the
@@ -42,6 +42,8 @@ export interface FineTuneOpts {
   zeroShotMs?: number;
   /** DAgger batches per PPO update in `mixed` mode. */
   imitationPerPpo?: number;
+  /** In `mixed` mode, DAgger batches to run alone before the first PPO update (PPO from a policy that cannot drive the track yet only adds noise). */
+  imitationWarmup?: number;
   /** Fraction of rollout steps the expert drives in a DAgger batch. */
   beta?: number;
   /** Imitation learning rate (PPO keeps TrackMix's warm-restart rate). */
@@ -217,6 +219,7 @@ export class FineTune {
   private readonly zeroShotEpisodes: number;
   private readonly zeroShotMs: number;
   private readonly imitationPerPpo: number;
+  private readonly imitationWarmup: number;
   private readonly beta: number;
   private readonly imitator: Imitator;
   private readonly now: () => number;
@@ -240,6 +243,7 @@ export class FineTune {
     this.zeroShotEpisodes = opts.zeroShotEpisodes ?? 64;
     this.zeroShotMs = opts.zeroShotMs ?? 12_000;
     this.imitationPerPpo = opts.imitationPerPpo ?? 3;
+    this.imitationWarmup = opts.imitationWarmup ?? 24;
     this.beta = opts.beta ?? 0.3;
     this.imitator = new Imitator(opts.imitationLr ?? 1e-3);
     this.now = opts.now ?? (() => performance.now());
@@ -351,6 +355,7 @@ export class FineTune {
       }
     } else if (this.phase === 'tune') {
       const t = this.now();
+      const warming = this.mode === 'mixed' && this.r.imitationBatches < this.imitationWarmup;
       const batches = this.mode === 'ppo' ? 0 : this.mode === 'imitation' ? 1 : this.imitationPerPpo;
       for (let b = 0; b < batches; b++) {
         this.imitator.batch(trainer, this.beta);
@@ -360,7 +365,7 @@ export class FineTune {
       // the time, so they do not count toward the completion shown to the user. Only episodes
       // from the policy's own PPO rollouts do (imitation-only mode has none, so it counts all).
       if (this.mode !== 'imitation') this.seen = trainer.env.finished.length;
-      if (this.mode !== 'imitation') {
+      if (this.mode !== 'imitation' && !warming) {
         await trainer.update();
         this.r.ppoUpdates++;
       }

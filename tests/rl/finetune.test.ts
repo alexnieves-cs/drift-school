@@ -88,7 +88,7 @@ describe('FineTune', () => {
   it('runs the zero-shot episodes without an update, then fine-tunes on a 70/30 pool', async () => {
     const t = await makeTrainer();
     const hash = t.weightHash();
-    const ft = new FineTune(t, { user, procedural, drainMs: 0, zeroShotEpisodes: 6, zeroShotMs: 60_000, imitationPerPpo: 1 });
+    const ft = new FineTune(t, { user, procedural, drainMs: 0, zeroShotEpisodes: 6, zeroShotMs: 60_000, imitationPerPpo: 1, imitationWarmup: 0 });
     ft.start();
     let guard = 0;
     while (ft.phase !== 'tune' && guard++ < 4000) await ft.step();
@@ -105,6 +105,22 @@ describe('FineTune', () => {
     expect(after.ppoUpdates).toBe(1);
     expect(after.imitationBatches).toBe(1);
     expect(t.weightHash()).not.toBe(hash);
+    ft.stop();
+  }, 60_000);
+
+  it('runs DAgger alone for the warmup batches, then adds PPO', async () => {
+    const t = await makeTrainer(2);
+    const ft = new FineTune(t, { user, procedural, drainMs: 0, zeroShotEpisodes: 1, zeroShotMs: 0, imitationPerPpo: 2, imitationWarmup: 4 });
+    ft.start();
+    let guard = 0;
+    while (ft.phase !== 'tune' && guard++ < 100) await ft.step();
+    await ft.step();
+    await ft.step();
+    expect(ft.report().imitationBatches).toBe(4);
+    expect(ft.report().ppoUpdates).toBe(0);
+    const after = await ft.step();
+    expect(after.ppoUpdates).toBe(1);
+    expect(after.imitationBatches).toBe(6);
     ft.stop();
   }, 60_000);
 
