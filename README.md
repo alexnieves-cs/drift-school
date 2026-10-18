@@ -16,6 +16,7 @@ npm test          # unit + perf budgets
 npm run lint
 npm run build
 npm run test:e2e  # Playwright. Needs a display stack or Chromium's software GL.
+npm run eval      # SPEC section 3 acceptance table (about 13 min; --quick, --only=stage0,matrix,hotswap,fps,physics)
 ```
 
 Keyboard driving, with Rapier walls, is at http://127.0.0.1:5173/dev/drive.html .
@@ -63,7 +64,7 @@ Physics runs at 500 Hz inside each 50 Hz control step. Observations are 48 float
 
 ## What the learning actually does
 
-Stage 0 does not reliably learn laps from a random Gaussian policy on CPU TF.js (about 700 steps/s here, and the cars crash). The page imitates pure pursuit for a few batches, then runs PPO. That imitation policy completes stage-0 laps. Treat the reward chart after that point as fine-tuning, not as proof of from-scratch learning inside three minutes.
+Stage 0 does not reliably learn laps from a random Gaussian policy on CPU TF.js (about 700 steps/s here, and the cars crash). The recipe (`src/rl/recipe.ts`) distils the pure-pursuit car with DAgger, stage by stage, under domain randomization and mixed surfaces, then runs a short validation-gated PPO phase. Nearly all of the driving skill comes from that imitation; PPO moves lap time by about 1% at this budget (`NOTES/rl.md`). Treat the reward chart as fine-tuning, not as proof of from-scratch learning inside three minutes. Hot-swap fine-tuning on a drawn track is also DAgger interleaved with PPO (`NOTES/swap.md`).
 
 `tRef` on a generated track is an analytic curvature speed profile. The pure-pursuit car is simulated separately and does finish stage 0–2 tracks.
 
