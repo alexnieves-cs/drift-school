@@ -2,7 +2,7 @@ import { ACT_DIM, OBS_DIM, type EpisodeConfig, type StepInfo, type TrackSpec } f
 import { CONTROL_DT } from '../shared/constants';
 import { makeRng, type RNG } from '../shared/rng';
 import { nearestSample } from '../track/sample';
-import { purePursuit } from '../track/baseline';
+import { newBaselineMemory, purePursuit, type BaselineController, type BaselineMemory, type BaselineOpts } from '../track/baseline';
 import { Vehicle } from './car/vehicle';
 import { defaultCarParams } from './car/params';
 import { RayField, fillObservation, wheelsOff } from './sensors';
@@ -26,6 +26,7 @@ interface Slot {
   action: [number, number];
   contact: boolean;
   returning: number;
+  mem: BaselineMemory;
 }
 
 function yawOf(tx: number, tz: number): number {
@@ -115,6 +116,7 @@ export class VecEnv {
         action: [0, 0.4],
         contact: false,
         returning: 0,
+        mem: newBaselineMemory(),
       };
       slot.rays.setTrack(track);
       this.place(slot);
@@ -136,6 +138,8 @@ export class VecEnv {
     slot.stepInLap = 0;
     slot.contact = false;
     slot.returning = 0;
+    slot.mem.pinned = 0;
+    slot.mem.reversing = 0;
     slot.action = [0, 0.4];
     slot.delay = [];
   }
@@ -265,12 +269,17 @@ export class VecEnv {
     );
   }
 
-  baselineActions(): Float32Array {
+  /**
+   * Pure-pursuit actions for every car. No argument gives the imitation teacher exactly as before;
+   * pass BaselineOpts for the oracle variants, or a controller function to drive with something else.
+   */
+  baselineActions(ctl?: BaselineOpts | BaselineController): Float32Array {
     const out = new Float32Array(this.n * ACT_DIM);
     for (let i = 0; i < this.n; i++) {
       const slot = this.slots[i];
       if (!slot) continue;
-      const cmd = purePursuit(slot.car, slot.track, slot.hint);
+      const cmd =
+        typeof ctl === 'function' ? ctl(slot.car, slot.track, slot.hint) : purePursuit(slot.car, slot.track, slot.hint, ctl, slot.mem);
       slot.hint = cmd.hint;
       out[i * ACT_DIM] = cmd.steer;
       out[i * ACT_DIM + 1] = cmd.throttle;
