@@ -7,12 +7,15 @@ test('dev server sends COOP and COEP', async ({ request }) => {
   expect(res.headers()['cross-origin-embedder-policy']).toBe('require-corp');
 });
 
-test('ghost view renders and holds frame rate', async ({ page }) => {
+// Software GL (CI, containers) renders far slower than a GPU; set E2E_MIN_FPS to match the machine.
+const MIN_FPS = Number(process.env.E2E_MIN_FPS ?? 30);
+
+test('ghost view renders and holds frame rate', async ({ page }, testInfo) => {
   await page.goto('/?view=ghosts&cam=topdown');
   await page.waitForSelector('[data-status="racing"]');
   await page.waitForTimeout(900);
   const fps = Number(await page.evaluate(() => document.body.dataset.fps ?? '0'));
-  const shot = await page.screenshot({ path: 'docs/media/race-topdown.png' });
+  const shot = await page.screenshot({ path: testInfo.outputPath('race-topdown.png') });
   expect(shot.byteLength).toBeGreaterThan(1000);
   const variance = await page.evaluate(() => {
     const canvas = document.querySelector('#view') as HTMLCanvasElement | null;
@@ -36,18 +39,18 @@ test('ghost view renders and holds frame rate', async ({ page }) => {
     return v / n;
   });
   expect(variance).toBeGreaterThan(1);
-  expect(fps).toBeGreaterThan(30);
+  expect(fps).toBeGreaterThan(MIN_FPS);
 });
 
-test('pov camera view', async ({ page }) => {
+test('pov camera view', async ({ page }, testInfo) => {
   await page.goto('/?view=ghosts&cam=pov');
   await page.waitForSelector('[data-status="racing"]');
   await page.waitForTimeout(400);
-  await page.screenshot({ path: 'docs/media/pov.png' });
+  await page.screenshot({ path: testInfo.outputPath('pov.png') });
   await expect(page.locator('[data-hud="speed"]')).not.toHaveText('0.0');
 });
 
-test('editor accepts a closed stadium stroke', async ({ page }) => {
+test('editor accepts a closed stadium stroke', async ({ page }, testInfo) => {
   await page.goto('/?view=editor&quiet=1');
   await page.waitForSelector('#stroke');
   const box = await page.locator('#stroke').boundingBox();
@@ -69,5 +72,5 @@ test('editor accepts a closed stadium stroke', async ({ page }) => {
   }
   await page.mouse.up();
   await expect(page.locator('.adapt')).toContainText('valid', { timeout: 5000 });
-  await page.screenshot({ path: 'docs/media/editor.png' });
+  await page.screenshot({ path: testInfo.outputPath('editor.png') });
 });

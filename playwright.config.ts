@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 180_000,
   expect: { timeout: 15_000 },
+  retries: process.env.CI ? 1 : 0,
   fullyParallel: false,
   workers: 1,
   use: {
@@ -19,7 +20,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 5173',
     url: 'http://127.0.0.1:5173',
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },
 });
