@@ -5,6 +5,7 @@ import { VecEnv } from '../sim/vecEnv';
 import { defaultCarParams } from '../sim/car/params';
 import { latencyFor, noiseFor, sampleCar, type DRLevel } from '../sim/dr';
 import { GaussianPolicy, ensureBackend } from './model';
+import { episodeConfig, type ScenarioSet } from './scenarios';
 import { Curriculum } from './curriculum';
 import { TrackMix } from './trackMix';
 import { aggregateGen, type EpRecord } from './genStats';
@@ -16,6 +17,9 @@ export interface TrainerOpts {
   epochs?: number;
   minibatch?: number;
   clip?: number;
+  /** Seeds weight init, exploration noise, episode DR and scenario sampling. */
+  seed?: number;
+  lr?: number;
 }
 
 export class Trainer {
@@ -29,6 +33,13 @@ export class Trainer {
   epochs: number;
   minibatch: number;
   clip: number;
+  /** Multiplies the entropy bonus (TrackMix owns the base value). */
+  entropyScale = 1;
+  /** In scenario mode, redraw every slot's scenario at the start of each update. */
+  freshEpisodesPerUpdate = true;
+  /** false trains the value head only (critic warm-up before PPO touches an imitation policy). */
+  trainPolicy = true;
+  readonly seed: number;
   dr: DRLevel = 'off';
   grip = 1;
   massScale = 1;
@@ -42,7 +53,8 @@ export class Trainer {
   constructor(opts: TrainerOpts = {}) {
     const n = opts.n ?? 16;
     this.env = new VecEnv(n);
-    this.policy = new GaussianPolicy(3e-4);
+    this.seed = opts.seed ?? 1;
+    this.policy = new GaussianPolicy(opts.lr ?? 3e-4, this.seed);
     this.horizon = opts.horizon ?? 64;
     this.epochs = opts.epochs ?? 3;
     this.minibatch = opts.minibatch ?? 256;
@@ -57,8 +69,27 @@ export class Trainer {
     this.ready = true;
   }
 
+  /**
+   * Stage pools with per-stage DR and surface mixes. While set (and until a hot-swap replaces
+   * the TrackMix pool), `resetEnvs` draws scenarios from here using `curriculum.stage`.
+   */
+  scenarios: ScenarioSet | null = null;
+  private scenarioPool: TrackSpec[] | null = null;
+  private resets = 0;
+
+  setScenarios(set: ScenarioSet): void {
+    this.scenarios = set;
+    this.mix.setPool(set.tracks(0));
+    this.scenarioPool = this.mix.tracks;
+  }
+
+  /** True while scenario sampling (not a swapped-in TrackMix pool) drives the env. */
+  get scenarioActive(): boolean {
+    return !!this.scenarios && this.scenarioPool === this.mix.tracks;
+  }
+
   private cfg(track: TrackSpec, i: number): EpisodeConfig {
-    const rng = makeRng((this.gen + 1) * 10007 + i * 13 + (track.seed ?? 0), `dr/${track.id}`);
+    const rng = makeRng((this.gen + 1) * 10007 + i * 13 + (track.seed ?? 0) + this.seed * 7919, `dr/${track.id}`);
     let car = sampleCar(defaultCarParams(), rng, this.dr, this.grip);
     car = { ...car, mass: car.mass * this.massScale };
     car.yawInertia *= this.massScale;
@@ -73,16 +104,30 @@ export class Trainer {
     };
   }
 
-  private resetEnvs(): void {
+  /** Fresh episodes on every slot. Public so the recipe can draw new scenarios per rollout. */
+  resetEnvs(): void {
     const tracks: TrackSpec[] = [];
     const cfgs: EpisodeConfig[] = [];
-    const rng = makeRng(this.gen + 3, 'pool');
+    this.resets++;
+    const scenario = this.scenarioActive;
+    // The TrackMix path keeps the original draw (gen + 3) so swap behaviour is unchanged.
+    const rng = makeRng(scenario ? this.seed * 977 + this.gen + this.resets * 31 + 3 : this.gen + 3, 'pool');
     for (let i = 0; i < this.env.n; i++) {
-      const stage = this.curriculum.sampleStage(rng);
-      void stage;
-      const track = this.mix.sample(rng);
-      tracks.push(track);
-      cfgs.push(this.cfg(track, i));
+      if (scenario) {
+        // A DR level chosen in the UI (setDR) overrides the stage profile.
+        const sc = this.scenarios!.sample(rng, Math.min(3, this.curriculum.stage), this.dr !== 'off' ? { dr: this.dr } : undefined);
+        tracks.push(sc.track);
+        cfgs.push(
+          episodeConfig(sc, this.seed * 7919 + this.resets * 101 + this.gen + 1, i, {
+            grip: this.grip,
+            massScale: this.massScale,
+          }),
+        );
+      } else {
+        const track = this.mix.sample(rng);
+        tracks.push(track);
+        cfgs.push(this.cfg(track, i));
+      }
     }
     const obs = this.env.reset(tracks, cfgs);
     this.obs.set(obs);
@@ -171,6 +216,7 @@ export class Trainer {
     const T = this.horizon;
     const obsBuf = new Float32Array(T * n * OBS_DIM);
     const actBuf = new Float32Array(T * n * ACT_DIM);
+    const preBuf = new Float32Array(T * n * ACT_DIM);
     const logBuf = new Float32Array(T * n);
     const valBuf = new Float32Array(T * n);
     const rewBuf = new Float32Array(T * n);
@@ -179,11 +225,14 @@ export class Trainer {
     let steps = 0;
     const episodes: EpRecord[] = [];
     const replayFrames: number[] = [];
+    // Scenario mode: every rollout starts from fresh tracks / DR / surfaces so DR is resampled per episode.
+    if (this.scenarioActive && this.freshEpisodesPerUpdate) this.resetEnvs();
 
     for (let t = 0; t < T; t++) {
-      const { action, logp, value } = this.policy.act(this.obs, n);
+      const { action, logp, value, pre } = this.policy.act(this.obs, n);
       obsBuf.set(this.obs, t * n * OBS_DIM);
       actBuf.set(action, t * n * ACT_DIM);
+      preBuf.set(pre, t * n * ACT_DIM);
       logBuf.set(logp, t * n);
       valBuf.set(value, t * n);
       const before = this.env.finished.length;
@@ -208,11 +257,13 @@ export class Trainer {
     const ret = new Float32Array(T * n);
     const gamma = 0.99;
     const lam = 0.95;
+    // Bootstrap the rollout boundary with V(s_T) instead of treating it as terminal.
+    const lastValue = this.policy.act(this.obs, n).value;
     for (let i = 0; i < n; i++) {
       let gae = 0;
       for (let t = T - 1; t >= 0; t--) {
         const idx = t * n + i;
-        const nextV = t === T - 1 || doneBuf[idx] ? 0 : valBuf[(t + 1) * n + i]!;
+        const nextV = doneBuf[idx] ? 0 : t === T - 1 ? lastValue[i]! : valBuf[(t + 1) * n + i]!;
         const delta = rewBuf[idx]! + gamma * nextV - valBuf[idx]!;
         gae = delta + gamma * lam * (doneBuf[idx] ? 0 : gae);
         adv[idx] = gae;
@@ -233,15 +284,45 @@ export class Trainer {
     let vloss = 0;
     let loss = 0;
     let updates = 0;
+    const shuffle = makeRng(this.seed * 313 + this.gen, 'ppo/shuffle');
+    const perm = new Int32Array(total);
+    const mo = new Float32Array(this.minibatch * OBS_DIM);
+    const ma = new Float32Array(this.minibatch * ACT_DIM);
+    const mpre = new Float32Array(this.minibatch * ACT_DIM);
+    const mlp = new Float32Array(this.minibatch);
+    const mad = new Float32Array(this.minibatch);
+    const mrt = new Float32Array(this.minibatch);
     for (let e = 0; e < this.epochs; e++) {
+      for (let i = 0; i < total; i++) perm[i] = i;
+      for (let i = total - 1; i > 0; i--) {
+        const j = shuffle.int(i + 1);
+        const tmp = perm[i]!;
+        perm[i] = perm[j]!;
+        perm[j] = tmp;
+      }
       for (let start = 0; start < total; start += this.minibatch) {
         const bs = Math.min(this.minibatch, total - start);
-        const o = obsBuf.subarray(start * OBS_DIM, (start + bs) * OBS_DIM);
-        const a = actBuf.subarray(start * ACT_DIM, (start + bs) * ACT_DIM);
-        const lp = logBuf.subarray(start, start + bs);
-        const ad = adv.subarray(start, start + bs);
-        const rt = ret.subarray(start, start + bs);
-        const stats = this.policy.ppoLoss(o, a, lp, ad, rt, bs, this.clip, this.mix.entropy);
+        for (let k = 0; k < bs; k++) {
+          const idx = perm[start + k]!;
+          mo.set(obsBuf.subarray(idx * OBS_DIM, (idx + 1) * OBS_DIM), k * OBS_DIM);
+          ma.set(actBuf.subarray(idx * ACT_DIM, (idx + 1) * ACT_DIM), k * ACT_DIM);
+          mpre.set(preBuf.subarray(idx * ACT_DIM, (idx + 1) * ACT_DIM), k * ACT_DIM);
+          mlp[k] = logBuf[idx]!;
+          mad[k] = adv[idx]!;
+          mrt[k] = ret[idx]!;
+        }
+        const stats = this.policy.ppoLoss(
+          mo.subarray(0, bs * OBS_DIM),
+          ma.subarray(0, bs * ACT_DIM),
+          mlp.subarray(0, bs),
+          mad.subarray(0, bs),
+          mrt.subarray(0, bs),
+          bs,
+          this.clip,
+          this.mix.entropy * this.entropyScale,
+          this.trainPolicy,
+          mpre.subarray(0, bs * ACT_DIM),
+        );
         kl += stats.kl;
         ent += stats.entropy;
         vloss += stats.valueLoss;

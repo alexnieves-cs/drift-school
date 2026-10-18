@@ -1,4 +1,5 @@
-import { Trainer } from '../rl/trainer';
+import type { Trainer } from '../rl/trainer';
+import { BROWSER_TUNE, configureFinetune, trainRecipe } from '../rl/recipe';
 import { generateTrack } from '../track/generate';
 import { buildTrackFromPoints } from '../track/build';
 import { handlePing } from '../shared/messages';
@@ -64,10 +65,22 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
     const stage = Number(msg.stage ?? 0);
     const seeds = (msg.seeds as number[]) ?? [1, 2, 3, 4];
     procedural = seeds.map((seed) => generateTrack({ seed, stage }));
-    trainer = new Trainer({ n, horizon: 32, epochs: 2, minibatch: 256 });
-    await trainer.init(procedural);
     post({ type: 'status', text: 'imitating pure pursuit' });
-    await trainer.imitate(3);
+    // Same recipe function the eval measures (src/rl/recipe.ts), with the short browser schedule:
+    // stage 0 only, no validation-gated PPO phase. Later stages train by PPO from this start.
+    const trained = await trainRecipe({
+      n,
+      maxStage: stage,
+      ppoUpdates: 0,
+      validate: false,
+      tune: BROWSER_TUNE,
+      onStatus: (text) => post({ type: 'status', text }),
+    });
+    trainer = trained.trainer;
+    configureFinetune(trainer);
+    // Live view: short rollouts, and cars keep their episodes between updates.
+    trainer.horizon = 32;
+    trainer.freshEpisodesPerUpdate = false;
     const weights = trainer.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
     await saveCheckpoint({ name: 'base', gen: trainer.gen, stage: trainer.curriculum.stage, weights });
     post({ type: 'ready', hash: trainer.weightHash(), trackId: trainer.env.trackId(0) });
