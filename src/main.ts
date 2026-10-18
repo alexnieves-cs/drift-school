@@ -138,7 +138,11 @@ function heroFrom(snap: CarSnap | null, fallback: HeroState): HeroState {
   };
 }
 
+let editorSkip = 0;
+
 function show(poses: Float32Array, n: number, hero: HeroState): void {
+  // The editor covers the scene: draw it at a quarter rate so the stroke stays responsive on slow GPUs.
+  if (!(document.querySelector('#editor') as HTMLElement).hidden && editorSkip++ % 4 !== 0) return;
   let drawn = hero;
   if (replay && replay.length >= 7) {
     const framesN = Math.floor(replay.length / 7);

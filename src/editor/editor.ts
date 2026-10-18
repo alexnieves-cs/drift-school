@@ -3,7 +3,7 @@ import { buildTrackFromPoints, validateTrack } from '../track/build';
 import { dist, fromFloat, smoothStroke, toFloat, trimClosingTail, type V2 } from './stroke';
 
 /** Make closure explicit: the validator and the build read a repeated first point as "closed". */
-function closeLoop(points: V2[], closed: boolean): V2[] {
+export function closeLoop(points: V2[], closed: boolean): V2[] {
   if (!closed || points.length < 3) return points;
   return [...points, { ...points[0]! }];
 }
