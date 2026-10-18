@@ -72,8 +72,14 @@ export class GaussianPolicy implements Policy {
     return tf.tensor2d(buf, [n, ACT_DIM]);
   }
 
-  act(obs: Float32Array, n: number): { action: Float32Array; logp: Float32Array; value: Float32Array } {
+  /**
+   * `pre` is the pre-tanh Gaussian sample. PPO must score the sample it drew: recomputing it as
+   * atanh(action) is wrong once actions saturate at +-1 (the imitation policy's do), and made the
+   * old/new log-ratio huge so every PPO update was clipped to nothing.
+   */
+  act(obs: Float32Array, n: number): { action: Float32Array; logp: Float32Array; value: Float32Array; pre: Float32Array } {
     const action = new Float32Array(n * ACT_DIM);
+    const pre = new Float32Array(n * ACT_DIM);
     const logp = new Float32Array(n);
     const value = new Float32Array(n);
     tf.tidy(() => {
@@ -86,10 +92,11 @@ export class GaussianPolicy implements Policy {
       const v = (this.value.apply(x) as tf.Tensor).reshape([n]);
       const logProb = gaussianLogp(u, mean, std).sub(tf.log(tf.scalar(1).sub(a.square()).add(1e-6)).sum(-1));
       action.set(a.dataSync() as Float32Array);
+      pre.set(u.dataSync() as Float32Array);
       logp.set(logProb.dataSync() as Float32Array);
       value.set(v.dataSync() as Float32Array);
     });
-    return { action, logp, value };
+    return { action, logp, value, pre };
   }
 
   /** Deterministic mean action, used for the showcase car. */
@@ -168,12 +175,14 @@ export class GaussianPolicy implements Policy {
     clip: number,
     entCoef: number,
     policyStep = true,
+    pre?: Float32Array,
   ): { loss: number; kl: number; entropy: number; valueLoss: number } {
     const x = tf.tensor2d(obs, [n, OBS_DIM]);
     const act = tf.tensor2d(actions, [n, ACT_DIM]);
     const old = tf.tensor1d(oldLogp);
     const advantage = tf.tensor1d(adv);
     const ret = tf.tensor1d(returns);
+    const preT = pre ? tf.tensor2d(pre, [n, ACT_DIM]) : null;
     let kl = 0;
     let entropy = 0;
     let valueLoss = 0;
@@ -185,9 +194,9 @@ export class GaussianPolicy implements Policy {
     const { grads, value } = tf.variableGrads(() => {
       const mean = this.pi.apply(x) as tf.Tensor2D;
       const std = tf.exp(this.logStd).reshape([1, ACT_DIM]);
-      const pre = tf.atanh(act.clipByValue(-0.999, 0.999));
-      const logProb = gaussianLogp(pre, mean, std).sub(
-        tf.log(tf.scalar(1).sub(tf.tanh(pre).square()).add(1e-6)).sum(-1),
+      const u = preT ?? tf.atanh(act.clipByValue(-0.999, 0.999));
+      const logProb = gaussianLogp(u, mean, std).sub(
+        tf.log(tf.scalar(1).sub(tf.tanh(u).square()).add(1e-6)).sum(-1),
       );
       const ratio = tf.exp(logProb.sub(old));
       const unclipped = ratio.mul(advantage);
@@ -218,6 +227,7 @@ export class GaussianPolicy implements Policy {
     old.dispose();
     advantage.dispose();
     ret.dispose();
+    preT?.dispose();
     return { loss, kl, entropy, valueLoss };
   }
 

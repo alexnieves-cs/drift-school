@@ -23,13 +23,13 @@ const PASS_STAGE = 2;
 const INFO_STAGES = [1, 3];
 const COPIES = 2;
 
-interface Grid {
+export interface Grid {
   completed: number;
   total: number;
   cells: { label: string; completed: number; total: number }[];
 }
 
-function runStage(act: (o: Float32Array, n: number) => Float32Array, stage: number, copies: number): Grid {
+export function runMatrixStage(act: (o: Float32Array, n: number) => Float32Array, stage: number, copies: number): Grid {
   const tracks = MATRIX_SEEDS.map((seed) => generateTrack({ seed, stage }));
   const grid: Grid = { completed: 0, total: 0, cells: [] };
   for (const surface of SURFACES) {
@@ -47,7 +47,7 @@ function runStage(act: (o: Float32Array, n: number) => Float32Array, stage: numb
   return grid;
 }
 
-const describe = (g: Grid) =>
+export const describeGrid = (g: Grid) =>
   `${pct(g.completed / g.total)} (${g.completed}/${g.total}); ` +
   g.cells.map((c) => `${c.label} ${pct(c.completed / c.total)}`).join(', ');
 
@@ -57,12 +57,12 @@ export const matrix: Section = async ({ log, quick }) => {
   const act = (o: Float32Array, n: number) => trainer.policy.actMean(o, n);
   const copies = quick ? 1 : COPIES;
   log(`matrix: stage ${PASS_STAGE}, ${MATRIX_SEEDS.length} seeds x 3 surfaces x 2 DR x ${copies}`);
-  const main = runStage(act, PASS_STAGE, copies);
+  const main = runMatrixStage(act, PASS_STAGE, copies);
   const info = quick
     ? []
     : INFO_STAGES.map((stage) => {
         log(`matrix: stage ${stage} (information only)`);
-        return { stage, grid: runStage(act, stage, copies) };
+        return { stage, grid: runMatrixStage(act, stage, copies) };
       });
   const rate = main.completed / main.total;
   const minCell = Math.min(...main.cells.map((c) => c.completed / c.total));
@@ -70,8 +70,8 @@ export const matrix: Section = async ({ log, quick }) => {
   const note =
     `Pre-registered: stage ${PASS_STAGE} tracks, seeds ${MATRIX_SEEDS[0]}-${MATRIX_SEEDS[MATRIX_SEEDS.length - 1]} ` +
     `(${MATRIX_SEEDS.length}, never trained on), ${copies} DR draw(s) per seed and cell, uniform surface mu. ` +
-    `Stage ${PASS_STAGE} per cell: ${describe(main)}; worst cell ${pct(minCell)}. ` +
-    info.map((i) => `Stage ${i.stage} (info only): ${describe(i.grid)}. `).join('') +
+    `Stage ${PASS_STAGE} per cell: ${describeGrid(main)}; worst cell ${pct(minCell)}. ` +
+    info.map((i) => `Stage ${i.stage} (info only): ${describeGrid(i.grid)}. `).join('') +
     `Policy = DAgger imitation of the pure-pursuit baseline, then ${ppo ? `${ppo.accepted}/${ppo.proposed} validation-gated PPO updates kept` : 'no PPO (quick mode)'}.`;
   return [
     {

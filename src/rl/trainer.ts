@@ -216,6 +216,7 @@ export class Trainer {
     const T = this.horizon;
     const obsBuf = new Float32Array(T * n * OBS_DIM);
     const actBuf = new Float32Array(T * n * ACT_DIM);
+    const preBuf = new Float32Array(T * n * ACT_DIM);
     const logBuf = new Float32Array(T * n);
     const valBuf = new Float32Array(T * n);
     const rewBuf = new Float32Array(T * n);
@@ -228,9 +229,10 @@ export class Trainer {
     if (this.scenarioActive && this.freshEpisodesPerUpdate) this.resetEnvs();
 
     for (let t = 0; t < T; t++) {
-      const { action, logp, value } = this.policy.act(this.obs, n);
+      const { action, logp, value, pre } = this.policy.act(this.obs, n);
       obsBuf.set(this.obs, t * n * OBS_DIM);
       actBuf.set(action, t * n * ACT_DIM);
+      preBuf.set(pre, t * n * ACT_DIM);
       logBuf.set(logp, t * n);
       valBuf.set(value, t * n);
       const before = this.env.finished.length;
@@ -286,6 +288,7 @@ export class Trainer {
     const perm = new Int32Array(total);
     const mo = new Float32Array(this.minibatch * OBS_DIM);
     const ma = new Float32Array(this.minibatch * ACT_DIM);
+    const mpre = new Float32Array(this.minibatch * ACT_DIM);
     const mlp = new Float32Array(this.minibatch);
     const mad = new Float32Array(this.minibatch);
     const mrt = new Float32Array(this.minibatch);
@@ -303,6 +306,7 @@ export class Trainer {
           const idx = perm[start + k]!;
           mo.set(obsBuf.subarray(idx * OBS_DIM, (idx + 1) * OBS_DIM), k * OBS_DIM);
           ma.set(actBuf.subarray(idx * ACT_DIM, (idx + 1) * ACT_DIM), k * ACT_DIM);
+          mpre.set(preBuf.subarray(idx * ACT_DIM, (idx + 1) * ACT_DIM), k * ACT_DIM);
           mlp[k] = logBuf[idx]!;
           mad[k] = adv[idx]!;
           mrt[k] = ret[idx]!;
@@ -317,6 +321,7 @@ export class Trainer {
           this.clip,
           this.mix.entropy * this.entropyScale,
           this.trainPolicy,
+          mpre.subarray(0, bs * ACT_DIM),
         );
         kl += stats.kl;
         ent += stats.entropy;
