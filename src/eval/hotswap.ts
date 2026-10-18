@@ -15,7 +15,7 @@ const HELD_OUT_SEEDS = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 1
 const HALF_WIDTH = 1;
 const MU = 1.05;
 
-interface Snapshot {
+export interface Snapshot {
   /** User track, deterministic, DR off. */
   user: number;
   /** User track, DR low, 24 draws. Secondary: the fine-tune did not train with DR. */
@@ -28,7 +28,7 @@ interface Snapshot {
   poolProc: number;
 }
 
-function snapshot(policyAct: ActFn, user: TrackSpec, drawn: TrackSpec, held: TrackSpec[], pool: TrackSpec[]): Snapshot {
+export function snapshot(policyAct: ActFn, user: TrackSpec, drawn: TrackSpec, held: TrackSpec[], pool: TrackSpec[]): Snapshot {
   return {
     user: evaluateCases(policyAct, casesFor([user], { copies: 1 })).rate,
     userDr: evaluateCases(policyAct, casesFor([user], { copies: 24, dr: 'low', seed: 11 })).rate,
@@ -39,7 +39,7 @@ function snapshot(policyAct: ActFn, user: TrackSpec, drawn: TrackSpec, held: Tra
 }
 
 /** Same net, same envs, same shared recipe weights, fresh optimizer: the shared trainer stays untouched. */
-async function cloneTrainer(src: Trainer, pool: TrackSpec[]): Promise<Trainer> {
+export async function cloneTrainer(src: Trainer, pool: TrackSpec[]): Promise<Trainer> {
   const t = new Trainer({ n: src.env.n, horizon: src.horizon, epochs: src.epochs, minibatch: src.minibatch });
   await t.init(pool);
   t.policy.setWeights(src.policy.getWeights());
@@ -48,20 +48,23 @@ async function cloneTrainer(src: Trainer, pool: TrackSpec[]): Promise<Trainer> {
   return t;
 }
 
-interface RunResult {
+export interface RunResult {
   report: FineTuneReport;
   after: Snapshot;
   trainSeconds: number;
   /** Training seconds at the first probe with user completion >= 80%, or null. */
   secondsTo80: number | null;
   probes: string;
+  /** User-track and held-out procedural completion at each probe (every 15 training seconds). */
+  userProbes: number[];
+  heldProbes: number[];
 }
 
 /**
  * One swap + fine-tune from `base` weights. `windowS` counts training time only: the wall
  * clock spent inside tune-phase steps, not the probes between them.
  */
-async function runFineTune(
+export async function runFineTune(
   base: Trainer,
   pool: TrackSpec[],
   user: TrackSpec,
@@ -77,6 +80,8 @@ async function runFineTune(
   const act: ActFn = (o, n) => t.policy.actMean(o, n);
   let secondsTo80: number | null = null;
   const probes: string[] = [];
+  const userProbes: number[] = [];
+  const heldProbes: number[] = [];
   let nextProbe = 15;
   let guard = 0;
   while (ft.report().tuneMs / 1000 < windowS || ft.phase !== 'tune') {
@@ -84,7 +89,10 @@ async function runFineTune(
     if (ft.phase === 'tune' && ft.report().tuneMs / 1000 >= nextProbe) {
       const s = ft.report().tuneMs / 1000;
       const u = evaluateCases(act, casesFor([user], { copies: 1 })).rate;
-      probes.push(`${s.toFixed(0)}s:${pct(u)}`);
+      const h = evaluateCases(act, casesFor(held, { copies: 1 })).rate;
+      probes.push(`${s.toFixed(0)}s:${pct(u)}/${pct(h)}`);
+      userProbes.push(u);
+      heldProbes.push(h);
       if (secondsTo80 === null && u >= 0.8) secondsTo80 = s;
       nextProbe += 15;
     }
@@ -99,7 +107,42 @@ async function runFineTune(
     trainSeconds: report.tuneMs / 1000,
     secondsTo80,
     probes: probes.join(' '),
+    userProbes,
+    heldProbes,
   };
+}
+
+const lowest = (xs: number[]) => (xs.length ? Math.min(...xs) : NaN);
+const at = (r: RunResult) => (r.secondsTo80 === null ? 'never' : `${r.secondsTo80.toFixed(0)} s`);
+
+/**
+ * Plain statement of what imitation and PPO each contribute, from three runs that start at the
+ * same weights and get the same training budget: combined (what ships), DAgger only, PPO only.
+ */
+function attribution(zeroShot: number, combined: RunResult, imitation: RunResult, ppo: RunResult, windowS: number): string {
+  const line = (name: string, r: RunResult) =>
+    `${name}: user ${pct(r.after.user)} at the end, >= 80% ${at(r)}, lowest user probe ${pct(lowest(r.userProbes))}, ` +
+    `held-out procedural ${pct(r.after.heldProc)} at the end and ${pct(lowest(r.heldProbes))} at worst`;
+  const parts = [
+    `Attribution, same starting weights, ${windowS} s of training each (zero-shot ${pct(zeroShot)}):`,
+    `${line('imitation only', imitation)};`,
+    `${line('PPO only', ppo)};`,
+    `${line('combined (shipped)', combined)}.`,
+  ];
+  if (zeroShot >= 0.8) return `${parts.join(' ')} The base already drove this track, so there is no improvement to attribute.`;
+  const iOk = imitation.after.user >= 0.8;
+  const pOk = ppo.after.user >= 0.8;
+  let verdict: string;
+  if (iOk && !pOk) verdict = 'Imitation supplies the improvement; PPO alone did not get there in the budget.';
+  else if (!iOk && pOk) verdict = 'PPO alone supplies the improvement; imitation alone did not get there in the budget.';
+  else if (iOk && pOk) {
+    const iFirst = (imitation.secondsTo80 ?? Infinity) <= (ppo.secondsTo80 ?? Infinity);
+    verdict =
+      `Either part alone ends above 80%. ${iFirst ? 'Imitation' : 'PPO'} gets there first (${at(iFirst ? imitation : ppo)} vs ${at(iFirst ? ppo : imitation)}), ` +
+      `and the combined run reaches it at ${at(combined)}, so the early improvement is ${iFirst ? "imitation's" : "PPO's"}; ` +
+      `${lowest(ppo.userProbes) < 0.8 || lowest(ppo.heldProbes) < 0.8 ? 'PPO alone dips below 80% at some probe (unstable)' : 'PPO alone held up at every probe'}.`;
+  } else verdict = 'Neither part alone reached 80% in the budget.';
+  return `${parts.join(' ')} ${verdict}`;
 }
 
 /**
@@ -192,47 +235,36 @@ export const hotswap: Section = async ({ quick, log }) => {
     pass: quick ? null : main.after.user >= 0.8,
     note:
       `${quick ? 'quick mode: ' : ''}${main.trainSeconds.toFixed(0)} s of training${quickNote}, ${r.ppoUpdates} PPO updates + ${dagShare} DAgger batches ` +
-      `(3 per PPO update), probes ${main.probes || 'none'}. Adaptation is imitation of the pure-pursuit baseline (DAgger on the user track and the replay pool) interleaved with PPO; ` +
+      `(3 per PPO update), probes (user/held-out procedural) ${main.probes || 'none'}. Adaptation is imitation of the pure-pursuit baseline (DAgger on the user track and the replay pool) interleaved with PPO; ` +
       `see the ablation line for what each contributes.`,
   });
   const ratio = (post: number, pre: number) => (pre > 0 ? post / pre : post >= 0 ? 1 : 0);
   const ratioHeld = ratio(main.after.heldProc, before.heldProc);
   const ratioPool = ratio(main.after.poolProc, before.poolProc);
   row({
-    test: 'Procedural completion retained, held-out seeds',
+    test: `Procedural completion retained, held-out seeds${quick ? ' (quick)' : ''}`,
     target: '>= 90% of pre-swap',
     measured: `${pct(main.after.heldProc)} vs ${pct(before.heldProc)} pre-swap (${pct(ratioHeld)} retained, ${held.length} seeds x 2)`,
     pass: quick ? null : ratioHeld >= 0.9,
     note: `Seeds the base recipe and the fine-tune never trained on, same cases before and after, deterministic policy.${baseNote}`,
   });
   row({
-    test: 'Procedural completion retained, replay-pool seeds',
+    test: `Procedural completion retained, replay-pool seeds${quick ? ' (quick)' : ''}`,
     target: '>= 90% of pre-swap',
     measured: `${pct(main.after.poolProc)} vs ${pct(before.poolProc)} pre-swap (${pct(ratioPool)} retained, ${pool.length} seeds x 2)`,
     pass: quick ? null : ratioPool >= 0.9,
     note: 'These seeds are in the 30% replay share, so they were trained on during the fine-tune: reported next to the held-out row, not instead of it.',
   });
 
-  // 4. Ablation: what PPO alone and imitation alone do from the same weights.
+  // 4. Ablation: what PPO alone and imitation alone do from the same weights, same budget.
   if (!quick) {
-    const parts: string[] = [];
+    const abl: Partial<Record<FineTuneMode, RunResult>> = {};
     for (const mode of ['ppo', 'imitation'] as const) {
       log(`hotswap: ablation ${mode}`);
-      const a = await runFineTune(base, pool, user, drawn, held, mode, windowS, log);
-      parts.push(
-        `${mode} only: user ${pct(a.after.user)}, held-out procedural ${pct(a.after.heldProc)}, 80% reached ${
-          a.secondsTo80 === null ? 'never' : `at ${a.secondsTo80.toFixed(0)} s`
-        } (probes ${a.probes})`,
-      );
+      abl[mode] = await runFineTune(base, pool, user, drawn, held, mode, windowS, log);
     }
     const userRow = rows.find((x) => x.test.startsWith('Completion on the user track'));
-    if (userRow) {
-      userRow.note += ` Ablation from the same weights, ${windowS} s each: ${parts.join('; ')}. Combined: 80% reached ${
-        main.secondsTo80 === null ? 'never' : `at ${main.secondsTo80.toFixed(0)} s`
-      }. Zero-shot user-track completion is ${pct(before.user)}, so the improvement ${
-        before.user >= 0.8 ? 'to report is nil (the base already drove it)' : 'is the gap those numbers close'
-      }.`;
-    }
+    if (userRow) userRow.note += ` ${attribution(before.user, main, abl.imitation!, abl.ppo!, windowS)}`;
   }
 
   // 5. URL hash round trip.

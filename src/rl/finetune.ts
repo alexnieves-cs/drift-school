@@ -83,6 +83,12 @@ type EnvInternals = { slots?: SlotLike[]; place?: (s: SlotLike) => void; writeOb
  * Point env slot `i` at `track` and restart its episode there. Uses `VecEnv.retargetSlot` when
  * the env has one; otherwise reaches the same three private members `VecEnv.reset` uses.
  * Throws if neither exists, so a VecEnv refactor fails loudly (tests/rl/finetune.test.ts).
+ * The slot keeps its Vehicle, so car parameters drawn for its first episode carry over; track,
+ * noise scale, latency and the ray field are the new ones.
+ *
+ * Proposed public form for src/sim/vecEnv.ts (physics worker's file, so not added here):
+ *   retargetSlot(i, track, cfg) { const s = this.slots[i]; if (!s) return; s.track = track;
+ *     s.cfg = { ...cfg, trackId: track.id }; s.rays.setTrack(track); this.place(s); this.writeObs(i); }
  */
 export function retargetSlot(env: VecEnv, i: number, track: TrackSpec, cfg: EpisodeConfig): void {
   const pub = (env as unknown as Retargetable).retargetSlot;

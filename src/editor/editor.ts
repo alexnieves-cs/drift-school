@@ -74,6 +74,12 @@ export class TrackEditor {
     this.drawing = true;
     this.raw = [p];
     this.points = [p];
+    // Keep receiving moves and the release if the pointer leaves the canvas mid-stroke.
+    try {
+      this.canvas.setPointerCapture(ev.pointerId);
+    } catch {
+      /* synthetic events have no active pointer to capture */
+    }
   }
 
   private onMove(ev: PointerEvent): void {
