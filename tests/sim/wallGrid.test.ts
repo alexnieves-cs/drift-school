@@ -173,6 +173,20 @@ describe('wall grid equals the brute-force loops', () => {
     expect(impacts).toBeGreaterThan(300);
   });
 
+  it('keeps per-cell work small however long the track is (the point of the grid)', () => {
+    for (const track of TRACKS) {
+      const g = getWallGrid(track.walls);
+      let maxNear = 0;
+      let maxRay = 0;
+      for (let c = 0; c + 1 < g.nearOff.length; c++) maxNear = Math.max(maxNear, g.nearOff[c + 1]! - g.nearOff[c]!);
+      for (let c = 0; c + 1 < g.rayOff.length; c++) maxRay = Math.max(maxRay, g.rayOff[c + 1]! - g.rayOff[c]!);
+      // brute force touches every segment (thousands); a cell holds a few dozen at the very most
+      expect(g.nSeg).toBeGreaterThan(400);
+      expect(maxNear, `${track.id} near list`).toBeLessThan(g.nSeg / 4);
+      expect(maxRay, `${track.id} ray list`).toBeLessThan(g.nSeg / 8);
+    }
+  });
+
   it('is shared across TrackSpec copies that reuse the walls array', () => {
     const t = TRACKS[0]!;
     expect(getWallGrid(t.walls)).toBe(getWallGrid({ ...t, id: 'copy' }.walls));

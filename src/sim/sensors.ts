@@ -205,13 +205,10 @@ export function wheelsOff(track: TrackSpec, car: Vehicle, hint: number): number 
   const sy = Math.sin(car.yaw);
   const wb = car.p.wheelbase / 2;
   const tr = car.p.track / 2;
-  const locals: [number, number][] = [
-    [wb, -tr],
-    [wb, tr],
-    [-wb, -tr],
-    [-wb, tr],
-  ];
-  for (const [lx, lz] of locals) {
+  // wheel order FL, FR, RL, RR; no per-call arrays
+  for (let i = 0; i < 4; i++) {
+    const lx = i < 2 ? wb : -wb;
+    const lz = (i & 1) === 0 ? -tr : tr;
     const wx = car.px + cy * lx - sy * lz;
     const wz = car.pz + sy * lx + cy * lz;
     const lat = (wx - s.x) * s.nx + (wz - s.z) * s.nz;

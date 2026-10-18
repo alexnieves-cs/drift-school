@@ -23,6 +23,7 @@ interface Slot {
   stepInLap: number;
   rng: RNG;
   delay: number[];
+  /** Last applied [steer, throttle]; mutated in place so a step allocates nothing. */
   action: [number, number];
   contact: boolean;
   returning: number;
@@ -140,7 +141,8 @@ export class VecEnv {
     slot.returning = 0;
     slot.mem.pinned = 0;
     slot.mem.reversing = 0;
-    slot.action = [0, 0.4];
+    slot.action[0] = 0;
+    slot.action[1] = 0.4;
     slot.delay = [];
   }
 
@@ -223,7 +225,8 @@ export class VecEnv {
       info.wrongWay = wrong;
       info.stuck = scored.info.stuck;
       info.rewardRaw = scored.reward;
-      slot.action = [steer, throttle];
+      slot.action[0] = steer;
+      slot.action[1] = throttle;
       if (scored.done || scored.truncated) {
         this.finished.push({
           lap: slot.lap >= 1,
