@@ -89,3 +89,18 @@ label { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0
   #right { display: none; }
   #bottom { display: none; }
 }
+.caption {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  padding: 0.35rem 0.8rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+#showcase { position: relative; height: 100%; overflow: hidden; }

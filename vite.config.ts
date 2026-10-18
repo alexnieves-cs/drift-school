@@ -26,6 +26,7 @@ export default defineConfig({
       input: {
         main: 'index.html',
         drive: 'dev/drive.html',
+        showcase: 'dev/showcase.html',
       },
     },
   },

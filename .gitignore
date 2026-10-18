@@ -9,3 +9,4 @@ coverage
 *.tsbuildinfo
 eval-report.json
 .media-frames
+release-assets/
