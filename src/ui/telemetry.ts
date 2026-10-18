@@ -8,29 +8,31 @@ export interface TelemetrySample {
   ay: number;
 }
 
+const WHEELS = ['FL', 'FR', 'RL', 'RR'];
+
+/** Selected-car panel. Elements are built once; update() only writes text and widths. */
 export class TelemetryPanel {
-  private bars: HTMLElement;
   private gg: HTMLCanvasElement;
+  private loadBars: HTMLElement[] = [];
+  private slipText: HTMLElement[] = [];
   private pts: { x: number; y: number }[] = [];
 
   constructor(parent: HTMLElement) {
     const root = document.createElement('div');
     root.className = 'telemetry';
-    root.innerHTML = `<div class="tel-bars"></div><canvas class="gg" width="140" height="140"></canvas>`;
+    root.innerHTML = `<div class="tel-bars">${WHEELS.map((n) => `<div><b>${n}</b><span></span><em>0°</em></div>`).join('')}</div><canvas class="gg" width="140" height="140"></canvas>`;
     parent.appendChild(root);
-    this.bars = root.querySelector('.tel-bars')!;
+    root.querySelectorAll<HTMLElement>('.tel-bars span').forEach((s) => this.loadBars.push(s));
+    root.querySelectorAll<HTMLElement>('.tel-bars em').forEach((s) => this.slipText.push(s));
     this.gg = root.querySelector('canvas')!;
   }
 
   update(s: TelemetrySample): void {
-    const labels = ['FL', 'FR', 'RL', 'RR'];
-    this.bars.innerHTML = labels
-      .map((name, i) => {
-        const load = Math.min(1, (s.load[i] ?? 0) / 8);
-        const slip = s.slip[i] ?? 0;
-        return `<div><b>${name}</b><span style="width:${load * 100}%"></span><em>${((slip * 180) / Math.PI).toFixed(0)}°</em></div>`;
-      })
-      .join('');
+    for (let i = 0; i < WHEELS.length; i++) {
+      const load = Math.min(1, (s.load[i] ?? 0) / 8);
+      this.loadBars[i]!.style.width = `${(load * 100).toFixed(0)}%`;
+      this.slipText[i]!.textContent = `${(((s.slip[i] ?? 0) * 180) / Math.PI).toFixed(0)}°`;
+    }
     this.pts.push({ x: s.ay, y: s.ax });
     if (this.pts.length > 80) this.pts.shift();
     const ctx = this.gg.getContext('2d');

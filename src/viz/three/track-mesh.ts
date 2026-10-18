@@ -1,7 +1,32 @@
 import * as THREE from 'three';
 import type { TrackSpec } from '../../shared/types';
 
-export function buildTrackMesh(track: TrackSpec): THREE.Group {
+/** Vertex color for a surface sample. Lit colors are linear floats, unlit ones are display values. */
+function surfaceColor(mu: number, curb: boolean, stripe: boolean, unlit: boolean): [number, number, number] {
+  if (unlit) {
+    const hex = curb ? (stripe ? 0xb8433a : 0xe6e2da) : mu < 0.8 ? 0x7a6347 : mu < 0.98 ? 0x6a5a55 : 0x5a5f6b;
+    const c = new THREE.Color().setHex(hex, THREE.LinearSRGBColorSpace);
+    return [c.r, c.g, c.b];
+  }
+  if (curb) return stripe ? [0.82, 0.16, 0.14] : [0.92, 0.9, 0.86];
+  return mu < 0.8 ? [0.42, 0.3, 0.16] : mu < 0.98 ? [0.32, 0.22, 0.2] : [0.2, 0.22, 0.27];
+}
+
+/** Surface and wall materials. `lit` uses Lambert shading, otherwise flat unlit colors (Low preset). */
+export function trackMaterials(lit: boolean): { surface: THREE.Material; wall: THREE.Material } {
+  if (lit) {
+    return {
+      surface: new THREE.MeshLambertMaterial({ vertexColors: true }),
+      wall: new THREE.MeshLambertMaterial({ color: 0xd5dceb }),
+    };
+  }
+  return {
+    surface: new THREE.MeshBasicMaterial({ vertexColors: true }),
+    wall: new THREE.MeshBasicMaterial({ color: new THREE.Color().setHex(0xc4cbdb, THREE.LinearSRGBColorSpace) }),
+  };
+}
+
+export function buildTrackMesh(track: TrackSpec, lit = true): THREE.Group {
   const group = new THREE.Group();
   const n = track.samples.length;
   if (n < 3) return group;
@@ -16,10 +41,11 @@ export function buildTrackMesh(track: TrackSpec): THREE.Group {
     pos.push(s.x + s.nx * hw, 0.02, s.z + s.nz * hw);
     pos.push(s.x - s.nx * hw, 0.02, s.z - s.nz * hw);
     const curb = Math.abs(s.curvature) > 0.18;
-    const stripe = i % 2 === 0;
+    // Alternate every half metre of arc length. Samples are 0.1 m apart, so alternating per sample
+    // painted a 0.2 m hatch that aliased into moire at any zoom.
+    const stripe = Math.floor(s.s / 0.5) % 2 === 0;
     const mu = s.mu;
-    const base = mu < 0.8 ? [0.42, 0.3, 0.16] : mu < 0.98 ? [0.32, 0.22, 0.2] : [0.2, 0.22, 0.27];
-    const c = curb ? (stripe ? [0.82, 0.16, 0.14] : [0.92, 0.9, 0.86]) : base;
+    const c = surfaceColor(mu, curb, stripe, !lit);
     col.push(c[0]!, c[1]!, c[2]!, c[0]!, c[1]!, c[2]!);
     const lift = 0.18;
     wall.push(s.x + s.nx * (hw + 0.12), 0.02, s.z + s.nz * (hw + 0.12));
@@ -43,13 +69,13 @@ export function buildTrackMesh(track: TrackSpec): THREE.Group {
   geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   geo.setIndex(idx);
   geo.computeVertexNormals();
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86, metalness: 0.04 });
-  group.add(new THREE.Mesh(geo, mat));
+  const mats = trackMaterials(lit);
+  group.add(new THREE.Mesh(geo, mats.surface));
   const wgeo = new THREE.BufferGeometry();
   wgeo.setAttribute('position', new THREE.Float32BufferAttribute(wall, 3));
   wgeo.setIndex(wallIdx);
   wgeo.computeVertexNormals();
-  group.add(new THREE.Mesh(wgeo, new THREE.MeshStandardMaterial({ color: 0xd5dceb, roughness: 0.7 })));
+  group.add(new THREE.Mesh(wgeo, mats.wall));
   return group;
 }
 

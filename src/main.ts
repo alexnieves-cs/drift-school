@@ -1,4 +1,7 @@
-import { ThreeRenderer, type HeroState } from './viz/renderer';
+import * as THREE from 'three';
+import { QUALITY, ThreeRenderer, type HeroState, type SceneCounts } from './viz/renderer';
+import { FrameStats, type FrameSummary } from './viz/frameStats';
+import { ReplayPlayer } from './viz/replay';
 import { Hud } from './viz/cameras/hud';
 import { mountControls } from './ui/controls';
 import { MetricCharts } from './ui/charts';
@@ -47,22 +50,57 @@ adapt.className = 'adapt';
 adapt.dataset.adapt = 'idle';
 
 const tapes = new Map<number, Float32Array>();
-let replay: Float32Array | null = null;
-let replayCursor = 0;
+const replayer = new ReplayPlayer();
+const frameStats = new FrameStats();
 let track: TrackSpec = generateTrack({ seed: 1, stage: 0 });
 let bestLap: number | null = null;
-let frames = 0;
-let fpsStamp = 0;
 let lastHero: HeroState | null = null;
+let lastSnap: CarSnap | null = null;
 let crashLatch = false;
+let metricsCount = 0;
+let ghostCount = 0;
+let ghostHighlight = -1;
+let mapCache: { id: string; pts: { x: number; z: number }[] } | null = null;
 
-const board = new Leaderboard(document.querySelector('#board') as HTMLElement, (gen) => {
+/** Hooks for the fps eval and the e2e tests. Read-only except where noted. */
+interface DriftDebug {
+  viz: ThreeRenderer;
+  frameStats: () => FrameSummary & { scene: SceneCounts };
+  resetFrameStats: () => void;
+  metricsCount: () => number;
+  boardRows: () => number;
+  boardGens: () => number[];
+  tape: (gen: number) => number[] | null;
+  /** Steps a fresh ReplayPlayer through the renderer at a fixed 30 Hz and returns x,y,z,yaw per step. */
+  probeReplay: (gen: number) => number[] | null;
+  replayGen: () => number;
+}
+declare global {
+  interface Window {
+    __drift?: DriftDebug;
+  }
+}
+
+function startReplay(gen: number): void {
   const tape = tapes.get(gen);
-  if (!tape) return;
-  replay = tape;
-  replayCursor = 0;
+  if (!tape) {
+    if (worker) worker.postMessage({ type: 'replayReq', gen });
+    return;
+  }
+  if (!replayer.start(gen, tape)) return;
+  document.body.dataset.replay = String(gen);
+  board.mark(gen);
   controls.setStatus(`replay gen ${gen}`, 'replay');
-});
+}
+
+function endReplay(): void {
+  renderer.setReplay(null);
+  board.mark(null);
+  document.body.dataset.replay = '';
+  controls.setStatus('racing', 'racing');
+}
+
+const board = new Leaderboard(document.querySelector('#board') as HTMLElement, startReplay);
 
 const controls = mountControls(left, (state, reason) => {
   if (reason === 'camera') renderer.setCamera(state.camera);
@@ -83,7 +121,6 @@ left.appendChild(adapt);
 
 let worker: Worker | null = null;
 let inline: import('./rl/trainer').Trainer | null = null;
-const inlineMode = params.get('inline') === '1' || view === 'ghosts';
 
 function send(msg: Record<string, unknown>): void {
   if (worker) worker.postMessage(msg);
@@ -91,25 +128,18 @@ function send(msg: Record<string, unknown>): void {
 }
 
 function mapPts(t: TrackSpec): { x: number; z: number }[] {
+  if (mapCache?.id === t.id) return mapCache.pts;
   const step = Math.max(1, Math.floor(t.samples.length / 80));
   const pts = [];
   for (let i = 0; i < t.samples.length; i += step) pts.push(t.samples[i]!);
+  mapCache = { id: t.id, pts };
   return pts;
 }
 
+/** Message-rate work: build the hero state and record what the panels will show at the next tick. */
 function heroFrom(snap: CarSnap | null, fallback: HeroState): HeroState {
   if (!snap) return fallback;
-  const latG = (snap.yawRate * snap.speed) / 9.81;
-  const longG = snap.vx / 9.81;
-  telemetry.update({
-    speed: snap.speed,
-    steer: snap.steer,
-    throttle: snap.throttle,
-    slip: snap.slip,
-    load: snap.load,
-    ax: longG,
-    ay: latG,
-  });
+  lastSnap = snap;
   const slipRear = (Math.abs(snap.slip[2] ?? 0) + Math.abs(snap.slip[3] ?? 0)) / 2;
   if (slipRear > 0.4) crashLatch = true;
   heat.note(track, snap.s, snap.speed, crashLatch, snap.x, snap.z);
@@ -132,50 +162,20 @@ function heroFrom(snap: CarSnap | null, fallback: HeroState): HeroState {
   };
 }
 
-function show(poses: Float32Array, n: number, hero: HeroState): void {
-  let drawn = hero;
-  if (replay && replay.length >= 7) {
-    const framesN = Math.floor(replay.length / 7);
-    const base = (replayCursor % framesN) * 7;
-    replayCursor++;
-    const qy = replay[base + 5] ?? 0;
-    const qw = replay[base + 3] ?? 1;
-    drawn = {
-      ...hero,
-      x: replay[base] ?? hero.x,
-      y: replay[base + 1] ?? hero.y,
-      z: replay[base + 2] ?? hero.z,
-      yaw: 2 * Math.atan2(qy, qw),
-    };
-    if (replayCursor > framesN + 5) replay = null;
-  }
-  lastHero = drawn;
-  renderer.updateCars(poses, n, 0);
-  renderer.frame(n, 0, drawn);
-  hud.update(
-    {
-      speed: drawn.speed,
-      lap: drawn.lap ?? 0,
-      lapTime: drawn.lapTime ?? 0,
-      bestLap,
-      steer: drawn.steer ?? 0,
-      throttle: drawn.throttle ?? 0,
-      slipRear: drawn.slipRear ?? 0,
-    },
-    mapPts(track),
-    drawn,
-  );
-  const now = performance.now();
-  if (frames === 0 && fpsStamp === 0) fpsStamp = now;
-  frames++;
-  if (now - fpsStamp > 500) {
-    document.body.dataset.fps = ((frames * 1000) / (now - fpsStamp)).toFixed(0);
-    frames = 0;
-    fpsStamp = now;
-  }
+/**
+ * Hand a new snapshot to the renderer. This is all a producer message costs the main thread:
+ * two buffer copies. Drawing happens in the animation-frame loop below, at display rate.
+ */
+function feed(poses: Float32Array, n: number, hero: HeroState, highlight: number): void {
+  ghostCount = n;
+  ghostHighlight = highlight;
+  lastHero = hero;
+  renderer.updateCars(poses, n, highlight);
+  renderer.pushHero(hero);
 }
 
-function onMetrics(stat: GenStat, tape?: number[]): void {
+function onMetrics(stat: GenStat, tape?: ArrayLike<number>): void {
+  metricsCount++;
   if (tape?.length) tapes.set(stat.gen, Float32Array.from(tape));
   if (stat.bestLap != null) bestLap = bestLap == null ? stat.bestLap : Math.min(bestLap, stat.bestLap);
   board.add(stat);
@@ -294,12 +294,21 @@ async function trainOnDrawn(): Promise<void> {
   controls.setStatus('training on drawn track', 'adapt');
 }
 
-function ghostLoop(): void {
-  const n = Math.min(64, Number(params.get('cars') ?? 64));
+/**
+ * Synthetic 30 Hz pack for the ghost view: `cars` cars lapping the track plus one lead car.
+ * It stands in for the worker's pose stream (same buffers, same cadence) so the render path is
+ * identical, and it is a pure function of time so screenshots are reproducible.
+ */
+function syntheticStream(): (now: number) => void {
+  const n = Math.min(64, Math.max(1, Number(params.get('cars') ?? 64)));
   const poses = new Float32Array(n * 7);
-  let t = 0;
-  const step = () => {
-    t += 0.016;
+  const t0 = performance.now();
+  let lastPush = -Infinity;
+  document.body.dataset.track = track.id;
+  return (now) => {
+    if (now - lastPush < 30) return;
+    lastPush = now;
+    const t = (now - t0) / 1000;
     for (let i = 0; i < n; i++) {
       const dist = (t * (1.6 + i * 0.03) + (i / n) * track.length) % track.length;
       const s = sampleAtS(track, dist);
@@ -312,28 +321,30 @@ function ghostLoop(): void {
       poses[o + 5] = Math.sin(yaw / 2);
     }
     const lead = sampleAtS(track, (t * 2.2) % track.length);
-    const yaw = Math.atan2(lead.tz, lead.tx);
-    show(poses, n, {
-      x: lead.x,
-      y: 0.05,
-      z: lead.z,
-      yaw,
-      pitch: 0,
-      roll: 0,
-      speed: 3.2,
-      steer: Math.sin(t) * 0.2,
-      throttle: 0.7,
-      slipRear: 0.05,
-      lap: Math.floor(t / 12),
-      lapTime: t % 12,
-      bestLap: 11.4,
-    });
-    requestAnimationFrame(step);
+    feed(
+      poses,
+      n,
+      {
+        x: lead.x,
+        y: 0.05,
+        z: lead.z,
+        yaw: Math.atan2(lead.tz, lead.tx),
+        pitch: 0,
+        roll: 0,
+        speed: 3.2,
+        steer: Math.sin(t) * 0.2,
+        throttle: 0.7,
+        slipRear: 0.05,
+        lap: Math.floor(t / 12),
+        lapTime: t % 12,
+        bestLap: 11.4,
+      },
+      -1,
+    );
   };
-  controls.setStatus('ghosts', 'racing');
-  document.body.dataset.track = track.id;
-  requestAnimationFrame(step);
 }
+
+let stream: ((now: number) => void) | null = null;
 
 async function startInline(): Promise<void> {
   const { Trainer } = await import('./rl/trainer');
@@ -346,21 +357,20 @@ async function startInline(): Promise<void> {
   await inline.imitate(3);
   controls.setStatus('racing', 'racing');
   document.body.dataset.track = inline.env.trackId(0);
+  // Training runs on the main thread in this fallback, so it blocks frames while an update runs.
+  // It is decoupled from drawing: the animation-frame loop keeps presenting the latest poses.
   const loop = async () => {
     if (!inline) return;
     if (!inlinePaused && !inlineModeBaseline) {
       const stat = await inline.update();
-      const tape = inline.replays.get(inline.gen);
-      onMetrics(stat, tape ? Array.from(tape) : undefined);
+      onMetrics(stat, inline.replays.get(inline.gen));
     } else if (inlineModeBaseline) {
       inline.env.step(inline.env.baselineActions());
     }
     const snap = inline.env.snapshot(0);
-    const poses = inline.env.poses();
-    show(poses, inline.env.n, heroFrom(snap, lastHero ?? blankHero()));
-    if (controls.read().paused) inlinePaused = true;
-    else inlinePaused = false;
-    requestAnimationFrame(() => void loop());
+    feed(inline.env.poses(), inline.env.n, heroFrom(snap, lastHero ?? blankHero()), 0);
+    inlinePaused = controls.read().paused;
+    setTimeout(() => void loop(), 0);
   };
   void loop();
 }
@@ -374,23 +384,27 @@ function startWorker(): void {
   worker = openLearner();
   const env = openEnv();
   env.postMessage({ type: 'ping', t: 7 });
+  let trackLabel = '';
   worker.onmessage = (ev: MessageEvent) => {
     const msg = ev.data as Record<string, unknown>;
     if (msg.type === 'status') controls.setStatus(String(msg.text), String(msg.text).includes('racing') ? 'racing' : 'live');
     if (msg.type === 'ghosts') {
-      const poses = msg.poses as Float32Array;
       const hero = heroFrom((msg.hero as CarSnap) ?? null, lastHero ?? blankHero());
       if (typeof msg.bestLap === 'number') bestLap = msg.bestLap;
-      show(poses, Number(msg.n ?? 0), hero);
-      document.body.dataset.track = String(msg.trackId ?? '');
+      // A synthetic stream (ghost view with ?train=1) owns the cars; the worker then only feeds panels.
+      if (!stream) feed(msg.poses as Float32Array, Number(msg.n ?? 0), hero, 0);
+      const id = String(msg.trackId ?? '');
+      if (id !== trackLabel) {
+        trackLabel = id;
+        document.body.dataset.track = id;
+      }
     }
-    if (msg.type === 'metrics') onMetrics(msg.stat as GenStat, msg.tape as number[] | undefined);
+    if (msg.type === 'metrics') onMetrics(msg.stat as GenStat, msg.tape as ArrayLike<number> | undefined);
     if (msg.type === 'replayRes') {
-      const poses = msg.poses as number[];
+      const poses = msg.poses as ArrayLike<number>;
       if (poses?.length) {
         tapes.set(Number(msg.gen), Float32Array.from(poses));
-        replay = tapes.get(Number(msg.gen)) ?? null;
-        replayCursor = 0;
+        startReplay(Number(msg.gen));
       }
     }
     if (msg.type === 'trackAck') {
@@ -415,7 +429,97 @@ window.addEventListener('keydown', (ev) => {
   renderer.setCamera(mode);
   left.dataset.camera = mode;
 });
-window.addEventListener('resize', () => renderer.resize());
+let resizePending = false;
+window.addEventListener('resize', () => {
+  resizePending = true;
+});
+
+/** The POV picture-in-picture sits under the controls and above the bottom panel, not behind it. */
+function placePip(): void {
+  const footer = document.querySelector('#bottom') as HTMLElement | null;
+  const hidden = !footer || footer.offsetParent === null;
+  const bottom = hidden ? 16 : Math.max(8, window.innerHeight - footer.getBoundingClientRect().top + 8);
+  renderer.setPip({ left: 12, bottom, width: 240 });
+}
+
+// ---- frame loop: one requestAnimationFrame chain draws everything, whatever the producer does.
+
+const UI_INTERVAL_MS = 100;
+let uiStamp = -Infinity;
+let frameStamp = 0;
+let fpsFrames = 0;
+let fpsStart = 0;
+
+function uiTick(now: number): void {
+  uiStamp = now;
+  const h = lastHero;
+  if (h) {
+    hud.update(
+      {
+        speed: h.speed,
+        lap: h.lap ?? 0,
+        lapTime: h.lapTime ?? 0,
+        bestLap,
+        steer: h.steer ?? 0,
+        throttle: h.throttle ?? 0,
+        slipRear: h.slipRear ?? 0,
+      },
+      mapPts(track),
+      h,
+    );
+  }
+  const snap = lastSnap;
+  if (snap) {
+    telemetry.update({
+      speed: snap.speed,
+      steer: snap.steer,
+      throttle: snap.throttle,
+      slip: snap.slip,
+      load: snap.load,
+      ax: snap.vx / 9.81,
+      ay: (snap.yawRate * snap.speed) / 9.81,
+    });
+  }
+  heat.flush(track);
+  charts.flush();
+}
+
+function onFrame(now: number): void {
+  const t0 = performance.now();
+  const dt = frameStamp ? Math.min(0.1, Math.max(0.001, (now - frameStamp) / 1000)) : 0.016;
+  frameStamp = now;
+  if (resizePending) {
+    resizePending = false;
+    renderer.resize();
+    placePip();
+  }
+  stream?.(now);
+  if (replayer.active) {
+    const pose = replayer.advance(dt);
+    if (pose) renderer.setReplay(pose);
+    else endReplay();
+  }
+  const t1 = performance.now();
+  const timing = renderer.frame(ghostCount, ghostHighlight, null, dt);
+  const t2 = performance.now();
+  if (now - uiStamp >= UI_INTERVAL_MS) uiTick(now);
+  const t3 = performance.now();
+  frameStats.record({
+    updateMs: t1 - t0 + timing.updateMs,
+    renderMs: timing.renderMs,
+    uiMs: t3 - t2,
+    totalMs: t3 - t0,
+    calls: timing.calls,
+    triangles: timing.triangles,
+  });
+  fpsFrames++;
+  if (now - fpsStart >= 500) {
+    if (fpsStart > 0) document.body.dataset.fps = ((fpsFrames * 1000) / (now - fpsStart)).toFixed(0);
+    fpsFrames = 0;
+    fpsStart = now;
+  }
+  requestAnimationFrame(onFrame);
+}
 
 mountEditor();
 if (view === 'editor') (document.querySelector('#editor') as HTMLElement).hidden = false;
@@ -424,13 +528,65 @@ if (cam === 'pov' || cam === 'chase' || cam === 'topdown') {
   renderer.setCamera(cam);
   left.dataset.camera = cam;
 }
+const quality = params.get('quality') === 'high' ? 'high' : 'low';
+left.dataset.quality = quality;
+const carsSlider = left.querySelector<HTMLInputElement>('[data-field="cars"]');
+if (carsSlider && params.has('cars')) carsSlider.value = String(Math.min(64, Math.max(4, Number(params.get('cars')))));
 
-await renderer.init(params.get('quality') === 'high' ? 'high' : 'low');
+// Diagnostics: ?fx=noaa,noshadow,unlit,lit,px1.2 edits the chosen preset so each feature's cost can
+// be measured on its own. Not used by the app or the eval.
+for (const flag of (params.get('fx') ?? '').split(',')) {
+  const q = QUALITY[quality];
+  if (flag === 'noaa') q.antialias = false;
+  if (flag === 'aa') q.antialias = true;
+  if (flag === 'noshadow') q.shadows = false;
+  if (flag === 'basic') q.shadowType = THREE.BasicShadowMap;
+  if (flag.startsWith('sm')) q.shadowMapSize = Number(flag.slice(2));
+  if (flag.startsWith('every')) q.shadowEvery = Number(flag.slice(5));
+  if (flag === 'unlit') q.lit = false;
+  if (flag === 'lit') q.lit = true;
+  if (flag.startsWith('px')) q.maxPixels = Number(flag.slice(2)) * 1_000_000;
+}
+await renderer.init(quality, { webgpu: params.get('webgpu') === '1' });
 renderer.loadTrack(track);
 renderer.resize();
-renderer.frame(0, -1, blankHero());
+placePip();
+renderer.pushHero(blankHero());
 
-if (view === 'ghosts' || view === 'pov' || view === 'chase') ghostLoop();
-else if (params.get('quiet') === '1') controls.setStatus(view === 'editor' ? 'editor' : 'idle', 'editor');
-else if (inlineMode) void startInline();
+window.__drift = {
+  viz: renderer,
+  frameStats: () => ({ ...frameStats.summary(), scene: renderer.counts() }),
+  resetFrameStats: () => frameStats.reset(),
+  metricsCount: () => metricsCount,
+  boardRows: () => board.rows.length,
+  boardGens: () => board.rows.map((r) => r.gen),
+  tape: (gen) => {
+    const t = tapes.get(gen);
+    return t ? Array.from(t) : null;
+  },
+  probeReplay: (gen) => {
+    const tape = tapes.get(gen);
+    if (!tape) return null;
+    const p = new ReplayPlayer();
+    if (!p.start(gen, tape)) return null;
+    const out: number[] = [];
+    const live = renderer.replayDrawn();
+    for (let pose = p.advance(1 / 30); pose; pose = p.advance(1 / 30)) {
+      renderer.setReplay(pose);
+      const d = renderer.replayDrawn()!;
+      out.push(d.x, d.y, d.z, d.yaw);
+    }
+    renderer.setReplay(live ? { x: live.x, y: live.y, z: live.z, yaw: live.yaw } : null);
+    return out;
+  },
+  replayGen: () => replayer.gen,
+};
+
+if (view === 'ghosts' || view === 'pov' || view === 'chase') {
+  stream = syntheticStream();
+  controls.setStatus('ghosts', 'racing');
+  if (params.get('train') === '1') startWorker();
+} else if (params.get('quiet') === '1') controls.setStatus(view === 'editor' ? 'editor' : 'idle', 'editor');
+else if (params.get('inline') === '1') void startInline();
 else startWorker();
+requestAnimationFrame(onFrame);
