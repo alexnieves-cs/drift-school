@@ -45,7 +45,7 @@ RACE_MINUTES=4 node scripts/record-demos.mjs race
 DRAW_MINUTES=3 node scripts/record-demos.mjs draw
 ```
 
-Set `CHROME_PATH` to use a specific Chromium. Files under 5 MB are written to `docs/media`. Larger ones go to `release-assets/` (git-ignored) and belong in a GitHub Release.
+`npm run media` retakes the still screenshots and the short race GIF. Set `CHROME_PATH` or `PW_CHROMIUM_PATH` to use a specific Chromium. Files under 5 MB are written to `docs/media`. Larger ones go to `release-assets/` (git-ignored) and belong in a GitHub Release.
 
 ## License
 

@@ -33,7 +33,7 @@ The [spec](SPEC.md) lists five moments to show off. This table says which are re
 | # | Moment | Clip | Status |
 | --- | --- | --- | --- |
 | 1 | 64 cars learn to lap | [GIF](docs/media/demo-race.gif) · [MP4](docs/media/demo-race.mp4) | **Partly.** 64 cars train live and lap a generated track. They do not spin out first and then learn: the policy starts as a clone of the pure-pursuit controller (see below). |
-| 2 | Generation-best lap time drops | same clip | **Partly.** In the recorded run the best lap per update fell from a median of 9.0 s (first five lap-finishing updates) to 6.4 s (last five) over about 30 updates on a short stage-0 track. The 40 s to 14 s story in the spec is not shown. |
+| 2 | Generation-best lap time drops | same clip | **Partly.** In the recorded run the best lap per update fell from a median of 9.0 s (first five lap-finishing updates) to 6.2 s (last five) over about 28 updates on a short stage-0 track. The 40 s to 14 s story in the spec is not shown. |
 | 3 | Draw a hairpin, hot-swap, re-learn | [GIF](docs/media/demo-draw-hairpin.gif) · [MP4](docs/media/demo-draw-hairpin.mp4) | **Hot-swap yes, re-learning no.** The drawn track is validated, swapped in with the weight hash unchanged, and the cars lap it. The in-app readout shows 100% completion on it with no crash-and-relearn phase: the cloned policy drives it from the start. |
 | 4 | In-car POV, countersteer drift | [GIF](docs/media/demo-hairpin-pov.gif) · [MP4](docs/media/demo-hairpin-pov.mp4) | **POV yes, drift no.** The POV camera and HUD are real, driving a real vehicle model through a hairpin. A controlled drift with countersteer on a track is not demonstrated. |
 | 5 | Dry to ice, brakes earlier, still finishes | [POV](docs/media/demo-hairpin-pov.gif) · [chase](docs/media/demo-hairpin-chase.gif) | **Real, with the baseline driver.** The pure-pursuit controller laps the same hairpin dry (16.4 s) and on ice (22.6 s, top speed 5.0 vs 5.6 m/s). The learned policy is not driving in this clip. |
@@ -46,12 +46,14 @@ Every number comes from a script in this repository. [docs/BENCHMARKS.md](docs/B
 
 | What | Result | Script |
 | --- | --- | --- |
-| Stage-0 lap completion, held-out seeds, headless | 100% (16/16) in 6 s | `npm run eval` |
+| Stage-0 lap completion, held-out seeds, headless | 100% (16/16) in 5 s | `npm run eval` |
 | Vehicle step, 10 substeps | 0.024 ms median (budget 0.15 ms) | `npm run perf` |
 | Vectorized env, 64 cars, one process | about 11,000 car-steps/s | `npm run perf` |
 | Track generation / validation | 1.2 ms / 0.9 ms median | `npm run perf` |
 | Pure-pursuit lap, hairpin, dry / ice | 16.4 s / 22.6 s | `scripts/record-demos.mjs hairpin` |
-| Hot-swap, ghost-car fps, surface x DR matrix | not measured yet | `npm run eval` prints `skip` |
+| Hot-swap onto a drawn S-curve: weights unchanged, completion after 2 min, no forgetting | hash equal; 100% (16/16), zero-shot 100%; procedural 100% retained | `npm run eval` |
+| Surface x randomization matrix (8 seeds x asphalt, carpet, dirt x DR low, high) | 99% (143/144) | `npm run eval` |
+| 64 ghost cars at 50 fps | not measured, needs a GPU (software GL gives about 7 fps) | `npm run eval` prints `skip` |
 
 Measured in a 4-vCPU Linux container with software rendering. Frame rate on a real GPU is not in this table.
 
@@ -122,9 +124,10 @@ Useful URLs: `/?cars=64` for the 64-car view, `/?view=ghosts` for a scripted gho
 
 - Training does not start from scratch. It starts from a pure-pursuit clone, so "learned to race" here means "fine-tuned a cloned driver", and the stage-0 completion above is mostly the clone's doing.
 - Drift is not demonstrated on a track. The physics test that scripts a drift only checks that rear slip passes 15 degrees and that countersteer stops the spin.
+- In the multi-car view the cars train on a pool of four generated tracks but only one track is drawn, so some ghosts look like they are driving off the road. They are on a track you cannot see.
 - Throughput is one process. The spec's four-worker `SharedArrayBuffer` farm and 20k steps/s are not built.
 - The renderer has WebGPU and WebGL2 paths and a Low and a High preset. In headless software GL the High preset rendered a black frame, so every clip uses Low. GTAO, TAA, cascaded shadows and bloom from the spec are not implemented.
-- The ghost-car frame rate, the hot-swap latency and the surface-by-randomization matrix are not yet in the eval table.
+- The ghost-car frame rate is not measured, because the only browser here has no GPU. The eval table's matrix and hot-swap rows run in Node with the cloned-then-fine-tuned policy, so they show it holds up across surfaces and swaps, not that it learned them.
 
 ## Credits
 

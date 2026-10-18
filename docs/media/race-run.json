@@ -1,32 +1,32 @@
 {
   "cars": 64,
-  "wallSeconds": 300,
-  "frames": 176,
+  "wallSeconds": 301,
+  "frames": 173,
   "playbackFps": 12,
-  "timelapse": 20.5,
+  "timelapse": 20.9,
   "generations": [
     {
       "gen": 1,
       "best": null,
       "mean": null,
-      "done": 0,
-      "crash": 0,
-      "vmax": 0
+      "done": null,
+      "crash": null,
+      "vmax": null
     },
     {
       "gen": 2,
       "best": null,
       "mean": null,
-      "done": 0,
-      "crash": 0,
-      "vmax": 0
+      "done": null,
+      "crash": null,
+      "vmax": null
     },
     {
       "gen": 3,
       "best": 8.3,
       "mean": 8.64,
       "done": 1,
-      "crash": 0.79,
+      "crash": 0,
       "vmax": 6.8
     },
     {
@@ -34,7 +34,7 @@
       "best": 9.04,
       "mean": 9.2,
       "done": 1,
-      "crash": 0.85,
+      "crash": 0,
       "vmax": 6.6
     },
     {
@@ -50,16 +50,16 @@
       "best": 12.32,
       "mean": 12.32,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 3.9
     },
     {
       "gen": 7,
       "best": null,
       "mean": null,
-      "done": 0,
-      "crash": 0,
-      "vmax": 0
+      "done": null,
+      "crash": null,
+      "vmax": null
     },
     {
       "gen": 8,
@@ -82,7 +82,7 @@
       "best": 8.36,
       "mean": 8.88,
       "done": 0.83,
-      "crash": 1,
+      "crash": 0.17,
       "vmax": 6.8
     },
     {
@@ -90,7 +90,7 @@
       "best": 8.98,
       "mean": 9.85,
       "done": 0.88,
-      "crash": 1,
+      "crash": 0.12,
       "vmax": 7
     },
     {
@@ -98,7 +98,7 @@
       "best": 10.18,
       "mean": 10.78,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 6.4
     },
     {
@@ -106,7 +106,7 @@
       "best": 11.12,
       "mean": 12.05,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 6.2
     },
     {
@@ -114,7 +114,7 @@
       "best": 8.38,
       "mean": 11.88,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 6.8
     },
     {
@@ -122,23 +122,23 @@
       "best": 14.72,
       "mean": 14.72,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 5.8
     },
     {
       "gen": 16,
       "best": null,
       "mean": null,
-      "done": 0,
-      "crash": 0,
-      "vmax": 0
+      "done": null,
+      "crash": null,
+      "vmax": null
     },
     {
       "gen": 17,
       "best": 7.76,
       "mean": 7.89,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 7.1
     },
     {
@@ -146,7 +146,7 @@
       "best": 7.86,
       "mean": 8.72,
       "done": 1,
-      "crash": 0.83,
+      "crash": 0,
       "vmax": 7.2
     },
     {
@@ -154,7 +154,7 @@
       "best": 7.3,
       "mean": 7.86,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 7
     },
     {
@@ -162,7 +162,7 @@
       "best": 7.04,
       "mean": 7.99,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 7.8
     },
     {
@@ -170,7 +170,7 @@
       "best": 6.06,
       "mean": 6.94,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 8
     },
     {
@@ -178,7 +178,7 @@
       "best": 6.5,
       "mean": 6.5,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 7.9
     },
     {
@@ -186,7 +186,7 @@
       "best": 5.92,
       "mean": 6.39,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 8.1
     },
     {
@@ -194,7 +194,7 @@
       "best": 6.18,
       "mean": 6.51,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 8.1
     },
     {
@@ -202,7 +202,7 @@
       "best": 5.92,
       "mean": 6.75,
       "done": 1,
-      "crash": 0.86,
+      "crash": 0,
       "vmax": 8
     },
     {
@@ -210,7 +210,7 @@
       "best": 6.36,
       "mean": 6.93,
       "done": 1,
-      "crash": 0.5,
+      "crash": 0,
       "vmax": 8
     },
     {
@@ -218,24 +218,16 @@
       "best": 6.48,
       "mean": 6.48,
       "done": 1,
-      "crash": 1,
+      "crash": 0,
       "vmax": 7.2
     },
     {
       "gen": 28,
       "best": null,
       "mean": null,
-      "done": 0,
-      "crash": 0,
-      "vmax": 0
-    },
-    {
-      "gen": 29,
-      "best": 6.5,
-      "mean": 6.5,
-      "done": 1,
-      "crash": 1,
-      "vmax": 7.8
+      "done": null,
+      "crash": null,
+      "vmax": null
     }
   ]
 }

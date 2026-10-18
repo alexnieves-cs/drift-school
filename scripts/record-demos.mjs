@@ -85,13 +85,14 @@ async function hairpin() {
 }
 
 async function readBoard(page) {
-  return page.evaluate(() =>
-    [...document.querySelectorAll('#board tbody tr')].map((tr) => {
+  return page.evaluate(() => {
+    const num = (t) => (t === '—' || t === '' ? null : Number(t.replace('%', '')));
+    const pct = (t) => (num(t) == null ? null : num(t) / 100);
+    return [...document.querySelectorAll('#board tbody tr')].map((tr) => {
       const c = [...tr.children].map((td) => td.textContent ?? '');
-      return { gen: Number(c[0]), best: c[1] === '—' ? null : Number(c[1]), mean: c[2] === '—' ? null : Number(c[2]),
-        done: Number(c[3].replace('%', '')) / 100, crash: Number(c[4].replace('%', '')) / 100, vmax: Number(c[5]) };
-    }),
-  );
+      return { gen: Number(c[0]), best: num(c[1]), mean: num(c[2]), done: pct(c[3]), crash: pct(c[4]), vmax: num(c[5]) };
+    });
+  });
 }
 
 async function race() {

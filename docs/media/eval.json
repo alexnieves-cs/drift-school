@@ -5,29 +5,66 @@
       "milestone": "M2",
       "test": "Stage 0 lap completion, headless, held-out seeds",
       "target": ">= 80% within 180 s",
-      "measured": "100% (16/16) after 6 s",
+      "measured": "100% (16/16) after 5 s",
       "pass": true
     },
     {
       "milestone": "M4",
-      "test": "Hot-swap: all envs on the new track",
+      "test": "Drawn S-curve is valid",
+      "target": "valid",
+      "measured": "valid",
+      "pass": true
+    },
+    {
+      "milestone": "M4",
+      "test": "URL hash round-trips the track",
+      "target": "same points (1 mm)",
+      "measured": "1826 chars, same points",
+      "pass": true
+    },
+    {
+      "milestone": "M4",
+      "test": "Hot-swap: all envs report the new track id",
       "target": "<= 15 s",
-      "measured": "not measured",
-      "pass": null
+      "measured": "8/8 envs in 3 ms (in process; the browser run adds the wait for the running update)",
+      "pass": true
+    },
+    {
+      "milestone": "M4",
+      "test": "Weights unchanged at swap",
+      "target": "hash equal",
+      "measured": "hash equal",
+      "pass": true
+    },
+    {
+      "milestone": "M4",
+      "test": "Completion on the drawn track after 2 min",
+      "target": ">= 80%",
+      "measured": "100% (16/16); zero-shot was 100%; 167 updates in 121 s",
+      "pass": true
+    },
+    {
+      "milestone": "M4",
+      "test": "Procedural completion retained (no forgetting)",
+      "target": ">= 90% of pre-swap",
+      "measured": "100% vs 100% before = 100% retained",
+      "pass": true
     },
     {
       "milestone": "M3",
       "test": "64 ghost cars frame rate",
       "target": ">= 50 fps",
-      "measured": "not measured",
-      "pass": null
+      "measured": "not measured here",
+      "pass": null,
+      "note": "Needs a browser with a GPU. `E2E_STRICT_PERF=1 npm run test:e2e -- m3` asserts it (and zero long tasks over 50 ms); without the flag the run prints the measured numbers as `[m3]` lines. Software GL gives about 7 fps."
     },
     {
       "milestone": "M5",
-      "test": "Eval matrix completion (seeds x surfaces x DR)",
+      "test": "Eval matrix completion (8 seeds x asphalt/carpet/dirt x DR low/high)",
       "target": ">= 70%",
-      "measured": "not measured",
-      "pass": null
+      "measured": "99% (143/144)",
+      "pass": true,
+      "note": "asphalt/low 100%, asphalt/high 100%, carpet/low 100%, carpet/high 100%, dirt/low 100%, dirt/high 96%"
     }
   ]
 }
