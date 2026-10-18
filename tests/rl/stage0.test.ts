@@ -1,25 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import { Trainer } from '../../src/rl/trainer';
+import { trainBaseRecipe } from '../../src/rl/recipe';
+import { casesFor, evaluateCases } from '../../src/eval/harness';
 import { generateTrack } from '../../src/track/generate';
 import { buildTrackFromPoints } from '../../src/track/build';
 
 describe('stage 0 training', () => {
-  it('reaches 80% lap completion within the 3 minute budget', async () => {
-    const tracks = [1, 2, 3, 4].map((seed) => generateTrack({ seed, stage: 0 }));
-    const trainer = new Trainer({ n: 8, horizon: 48, epochs: 2, minibatch: 256 });
-    await trainer.init(tracks);
-    const t0 = performance.now();
-    // Pure-pursuit warm start, then PPO. From-scratch PPO at ~800 steps/s
-    // does not finish laps before the wall penalty dominates; the warm start
-    // is part of the in-browser recipe and finishes well inside 3 minutes.
-    await trainer.imitate(4);
-    await trainer.update();
-    const completion = trainer.evalCompletion(8, 1000);
-    expect(performance.now() - t0).toBeLessThan(180_000);
-    expect(completion).toBeGreaterThanOrEqual(0.8);
+  it('imitation warm start + PPO updates reach 80% lap completion on held-out seeds within 3 minutes', async () => {
+    // The recipe is pure-pursuit imitation, a critic warm-up, then PPO. It is not PPO from scratch:
+    // from-scratch PPO does not learn laps at the CPU training rate (see README).
+    const { trainer, seconds } = await trainBaseRecipe();
+    // Seeds 101-108 are never in the training pool (seeds 1-4).
+    const tracks = [101, 102, 103, 104, 105, 106, 107, 108].map((seed) => generateTrack({ seed, stage: 0 }));
+    const out = evaluateCases((obs, n) => trainer.policy.actMean(obs, n), casesFor(tracks, { copies: 2 }));
+    expect(seconds).toBeLessThan(180);
+    expect(out.rate).toBeGreaterThanOrEqual(0.8);
   }, 180_000);
 
-  it('swaps the track pool without changing weights', async () => {
+  it('keeps the warm-start policy through further PPO updates', async () => {
+    const { trainer } = await trainBaseRecipe();
+    for (let i = 0; i < 6; i++) await trainer.update();
+    const tracks = [101, 102, 103, 104].map((seed) => generateTrack({ seed, stage: 0 }));
+    const out = evaluateCases((obs, n) => trainer.policy.actMean(obs, n), casesFor(tracks, { copies: 2 }));
+    expect(out.rate).toBeGreaterThanOrEqual(0.7);
+  }, 180_000);
+
+  it('swaps the track pool without changing weights, with every env starting on the new track', async () => {
     const tracks = [generateTrack({ seed: 2, stage: 0 })];
     const trainer = new Trainer({ n: 4, horizon: 16, epochs: 1, minibatch: 64 });
     await trainer.init(tracks);
@@ -31,7 +37,7 @@ describe('stage 0 training', () => {
     trainer.queueTrackPool([custom, tracks[0]!], true);
     trainer.forceSwap();
     expect(trainer.weightHash()).toBe(before);
-    expect(trainer.env.trackId(0)).toBe(custom.id);
+    expect(trainer.env.trackIds()).toEqual(['user-s', 'user-s', 'user-s', 'user-s']);
     expect(trainer.mix.entropy).toBe(0.02);
     expect(trainer.mix.weights[0]).toBeCloseTo(0.7, 2);
   });
