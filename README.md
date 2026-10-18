@@ -133,7 +133,7 @@ Useful URLs: `/?cars=64` for the 64-car view, `/?view=ghosts` for a scripted gho
 
 - Built by [Alex Nieves](https://github.com/alexnieves-cs) with Claude Code.
 - Sibling project: [frontier-fly](https://github.com/alexnieves-cs/frontier-fly), the in-browser drone explorer whose stack and structure this reuses.
-- Full dependency and technique credits are in [CREDITS.md](CREDITS.md). Main libraries: [three.js](https://threejs.org) (MIT), [TensorFlow.js](https://www.tensorflow.org/js) (Apache-2.0), [Rapier](https://rapier.rs) (Apache-2.0), [uPlot](https://github.com/leeoniya/uPlot) (MIT), [Comlink](https://github.com/GoogleChromeLabs/comlink) (Apache-2.0), [fflate](https://github.com/101arrowz/fflate) (MIT).
+- Full dependency and technique credits are in [CREDITS.md](CREDITS.md). Main libraries: [three.js](https://threejs.org) (MIT), [TensorFlow.js](https://www.tensorflow.org/js) (Apache-2.0), [Rapier](https://rapier.rs) (Apache-2.0), [uPlot](https://github.com/leeoniya/uPlot) (MIT), [fflate](https://github.com/101arrowz/fflate) (MIT).
 - The cross-origin-isolation service worker follows the approach of [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker).
 - Nothing in the repository is third-party art. The track, car and HUD geometry are drawn in code.
 
