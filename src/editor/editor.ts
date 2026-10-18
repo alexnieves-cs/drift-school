@@ -1,14 +1,7 @@
 import type { TrackSpec, Validation } from '../shared/types';
 import { buildTrackFromPoints, validateTrack } from '../track/build';
-import { dist, fromFloat, smoothStroke, toFloat, type V2 } from './stroke';
-
-function closeEnds(points: V2[], closed: boolean): V2[] {
-  if (!closed || points.length < 3) return points;
-  const s = points[0]!;
-  const e = points[points.length - 1]!;
-  if (dist(s, e) <= 1) return points;
-  return [...points, { x: s.x + 0.02, z: s.z }];
-}
+import { dist, fromFloat, toFloat, type V2 } from './stroke';
+import { processStroke } from './pipeline';
 
 export interface EditorOpts {
   width: number;
@@ -81,6 +74,12 @@ export class TrackEditor {
     this.drawing = true;
     this.raw = [p];
     this.points = [p];
+    // Keep receiving moves and the release if the pointer leaves the canvas mid-stroke.
+    try {
+      this.canvas.setPointerCapture(ev.pointerId);
+    } catch {
+      /* synthetic events have no active pointer to capture */
+    }
   }
 
   private onMove(ev: PointerEvent): void {
@@ -108,19 +107,8 @@ export class TrackEditor {
     if (!this.drawing) return;
     this.drawing = false;
     if (this.raw.length < 3) return;
-    const a = this.raw[0]!;
-    const b = this.raw[this.raw.length - 1]!;
-    const closed = dist(a, b) < 1;
-    const candidates = [smoothStroke(this.raw, closed), this.raw.slice()];
-    this.points = candidates[0]!;
-    for (const candidate of candidates) {
-      const closedPts = closeEnds(candidate, closed);
-      if (validateTrack(toFloat(closedPts), this.halfWidth).ok) {
-        this.points = closedPts;
-        break;
-      }
-      this.points = closedPts;
-    }
+    // Stroke -> RDP -> Chaikin x2 -> curvature limit -> straight start; see pipeline.ts.
+    this.points = processStroke(this.raw, this.halfWidth, this.mu).points;
     this.commit();
   }
 

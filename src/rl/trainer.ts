@@ -164,6 +164,28 @@ export class Trainer {
     this.pendingTracks = null;
   }
 
+  // --- Hot-swap support used by rl/finetune.ts (acc/swap). Additive; nothing above changed. ---
+
+  /** Episode config for `track` in env slot `i`, same DR draw `resetEnvs` uses. */
+  configFor(track: TrackSpec, i: number): EpisodeConfig {
+    return this.cfg(track, i);
+  }
+
+  /** Rollout without learning: sampled-policy steps, no gradient update, weights untouched. */
+  rolloutNoUpdate(steps: number): void {
+    const n = this.env.n;
+    for (let t = 0; t < steps; t++) {
+      const { action } = this.policy.act(this.obs, n);
+      const stepped = this.env.step(action);
+      this.obs.set(stepped.obs);
+    }
+  }
+
+  /** Re-read the env's current observation after something else stepped or retargeted it. */
+  syncObs(): void {
+    this.obs.set(this.env.obs);
+  }
+
   weightHash(): string {
     return hashBuffers(this.policy.getWeights());
   }

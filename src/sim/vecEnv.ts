@@ -350,4 +350,16 @@ export class VecEnv {
       slot.grid = getWallGrid(slot.track.walls);
     }
   }
+
+  /** Point slot `i` at `track` and restart its episode there. The slot keeps its Vehicle. */
+  retargetSlot(i: number, track: TrackSpec, cfg: EpisodeConfig): void {
+    const slot = this.slots[i];
+    if (!slot) return;
+    slot.track = track;
+    slot.cfg = { ...cfg, trackId: track.id };
+    slot.rays.setTrack(track);
+    slot.grid = getWallGrid(track.walls);
+    this.place(slot);
+    this.writeObs(i);
+  }
 }

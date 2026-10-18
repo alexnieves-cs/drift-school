@@ -11,9 +11,11 @@ import { Heatmap } from './ui/heatmaps';
 import { generateTrack } from './track/generate';
 import { sampleAtS } from './track/sample';
 import { buildTrackFromPoints } from './track/build';
-import { encodeTrackHash, decodeTrackHash } from './editor/share';
+import { encodeTrackHash, decodeTrackHash, quantizePoints } from './editor/share';
 import { toFloat } from './editor/stroke';
-import { TrackEditor } from './editor/editor';
+import { TrackEditor, type EditorState } from './editor/editor';
+import { AdaptationPanel } from './ui/adaptation';
+import { FineTune, type FineTuneReport } from './rl/finetune';
 import { openEnv, openLearner } from './workers/pool';
 import { saveCheckpoint, loadCheckpoint } from './rl/checkpoint';
 import type { CameraMode, GenStat, TrackSpec } from './shared/types';
@@ -118,6 +120,9 @@ const controls = mountControls(left, (state, reason) => {
   if (reason === 'cars') controls.setStatus(`${state.cars} cars on next load`, 'note');
 });
 left.appendChild(adapt);
+const adaptation = new AdaptationPanel(left);
+/** Set by `trainOnDrawn`: the drawn track's id and when the button was pressed. */
+let swap: { id: string; t0: number } | null = null;
 
 let worker: Worker | null = null;
 let inline: import('./rl/trainer').Trainer | null = null;
@@ -199,24 +204,22 @@ function applyInline(msg: Record<string, unknown>): void {
 let inlineModeBaseline = false;
 let inlinePaused = false;
 
+let inlineFine: FineTune | null = null;
+let inlineProc: TrackSpec[] = [];
+
 async function swapInline(msg: Record<string, unknown>): Promise<void> {
   if (!inline) return;
-  const points = Float32Array.from((msg.points as number[]) ?? []);
-  const user = buildTrackFromPoints(points, {
-    halfWidth: Number(msg.halfWidth ?? 1),
-    mu: Number(msg.mu ?? 1),
-    source: 'user',
-    id: 'user-track',
-  });
-  const before = inline.weightHash();
-  inline.queueTrackPool([user, track], true);
-  inline.forceSwap();
+  const points = quantizePoints((msg.points as number[]) ?? []);
+  const halfWidth = Number(msg.halfWidth ?? 1);
+  const mu = Number(msg.mu ?? 1);
+  const user = buildTrackFromPoints(points, { halfWidth, mu, source: 'user' });
+  inlineFine?.stop();
+  inlineFine = new FineTune(inline, { user, procedural: inlineProc });
+  inlineFine.start();
   track = user;
   renderer.loadTrack(track);
-  const hash = encodeTrackHash(points, user.samples[0]?.halfWidth ?? 1, user.samples[0]?.mu ?? 1);
-  history.replaceState(null, '', `#${hash}`);
-  adapt.dataset.adapt = `swapped ${user.id} weights ${before === inline.weightHash() ? 'unchanged' : 'CHANGED'}`;
-  document.body.dataset.track = inline.env.trackId(0);
+  history.replaceState(null, '', `#${encodeTrackHash(points, halfWidth, mu)}`);
+  document.body.dataset.track = user.id;
 }
 
 async function persist(name: string): Promise<void> {
@@ -243,7 +246,7 @@ function toggleEditor(): void {
   el.hidden = !el.hidden;
 }
 
-let editorState: { track: TrackSpec | null; points: { x: number; z: number }[] } = { track: null, points: [] };
+let editorState: Partial<EditorState> = {};
 
 function mountEditor(): void {
   const stroke = document.querySelector('#stroke') as HTMLCanvasElement;
@@ -272,24 +275,36 @@ function mountEditor(): void {
   window.addEventListener('resize', fit);
 }
 
+/** Count how many envs the learner reports on the drawn track; stamp when all of them are. */
+function noteEnvTracks(ids: string[] | undefined): void {
+  if (!swap || !ids?.length) return;
+  const d = document.body.dataset;
+  const on = ids.filter((id) => id === swap!.id).length;
+  d.envsOnUser = String(on);
+  d.envTotal = String(ids.length);
+  if (on === ids.length && !d.allOnUserMs) d.allOnUserMs = String(Math.round(performance.now() - swap.t0));
+}
+
 async function trainOnDrawn(): Promise<void> {
-  const built = editorState.track;
-  if (!built) {
+  const state = editorState as Partial<EditorState>;
+  if (!state.track || !state.validation?.ok || !state.points) {
     controls.setStatus('track is not valid', 'bad');
     return;
   }
-  const points = Array.from(toFloat(editorState.points));
-  send({
-    type: 'setTrackPool',
-    points,
-    halfWidth: built.samples[0]?.halfWidth ?? 1,
-    mu: built.samples[0]?.mu ?? 1,
-    fineTune: true,
-  });
+  // Snap to mm: the track id, the URL hash and the learner's track all come from the same points.
+  const points = quantizePoints(toFloat(state.points));
+  const halfWidth = state.halfWidth ?? 1;
+  const mu = state.mu ?? 1;
+  const built = buildTrackFromPoints(points, { halfWidth, mu, source: 'user' });
+  const d = document.body.dataset;
+  for (const k of ['envsOnUser', 'envTotal', 'allOnUserMs', 'swapAckTrack', 'swapAckEnvs', 'swapAckMs', 'swapHashEqual']) delete d[k];
+  swap = { id: built.id, t0: performance.now() };
+  d.userTrack = built.id;
+  adaptation.begin(built.id);
+  send({ type: 'setTrackPool', points: Array.from(points), halfWidth, mu, fineTune: true });
   track = built;
   renderer.loadTrack(track);
-  const hash = encodeTrackHash(Float32Array.from(points), built.samples[0]?.halfWidth ?? 1, built.samples[0]?.mu ?? 1);
-  history.replaceState(null, '', `#${hash}`);
+  history.replaceState(null, '', `#${encodeTrackHash(points, halfWidth, mu)}`);
   (document.querySelector('#editor') as HTMLElement).hidden = true;
   controls.setStatus('training on drawn track', 'adapt');
 }
@@ -350,6 +365,7 @@ async function startInline(): Promise<void> {
   const { Trainer } = await import('./rl/trainer');
   const seeds = [1, 2, 3, 4].map((seed) => generateTrack({ seed, stage: 0 }));
   track = seeds[0]!;
+  inlineProc = seeds;
   renderer.loadTrack(track);
   inline = new Trainer({ n: Number(params.get('cars') ?? 8), horizon: 32, epochs: 2, minibatch: 256 });
   controls.setStatus('imitating pure pursuit', 'imitating');
@@ -361,7 +377,20 @@ async function startInline(): Promise<void> {
   // It is decoupled from drawing: the animation-frame loop keeps presenting the latest poses.
   const loop = async () => {
     if (!inline) return;
-    if (!inlinePaused && !inlineModeBaseline) {
+    if (!inlinePaused && !inlineModeBaseline && inlineFine && inlineFine.phase !== 'done') {
+      const gen0 = inline.gen;
+      const rep = await inlineFine.step();
+      adaptation.update(rep);
+      const stat = inline.history[inline.history.length - 1];
+      if (inline.gen !== gen0 && stat) onMetrics(stat, undefined);
+      document.body.dataset.track = inline.env.trackId(0);
+      noteEnvTracks(inline.env.trackIds());
+      if (rep.latencyMs !== null && !document.body.dataset.swapAckMs && swap) {
+        document.body.dataset.swapAckMs = String(Math.round(performance.now() - swap.t0));
+        document.body.dataset.swapHashEqual = String(rep.weightHashAtDrain === rep.weightHashStart);
+        document.body.dataset.swapAckEnvs = `${rep.envsOnUserAtSwap}/${rep.envTotal}`;
+      }
+    } else if (!inlinePaused && !inlineModeBaseline) {
       const stat = await inline.update();
       onMetrics(stat, inline.replays.get(inline.gen));
     } else if (inlineModeBaseline) {
@@ -398,6 +427,8 @@ function startWorker(): void {
         trackLabel = id;
         document.body.dataset.track = id;
       }
+      noteEnvTracks(msg.ids as string[] | undefined);
+      worker?.postMessage({ type: 'ghostAck' });
     }
     if (msg.type === 'metrics') onMetrics(msg.stat as GenStat, msg.tape as ArrayLike<number> | undefined);
     if (msg.type === 'replayRes') {
@@ -408,9 +439,14 @@ function startWorker(): void {
       }
     }
     if (msg.type === 'trackAck') {
-      adapt.dataset.adapt = `track ${String(msg.trackId)} envs ${String(msg.envCount)} hash ${String(msg.hash)}`;
-      document.body.dataset.track = String(msg.trackId);
+      adapt.dataset.adapt = `track ${String(msg.trackId)} envs ${String(msg.envCount)}/${String(msg.envTotal)} hash ${String(msg.hash)}`;
+      const d = document.body.dataset;
+      d.swapAckTrack = String(msg.trackId);
+      d.swapAckEnvs = `${String(msg.envCount)}/${String(msg.envTotal)}`;
+      d.swapAckMs = swap ? String(Math.round(performance.now() - swap.t0)) : '';
+      d.swapHashEqual = String(msg.hash === msg.hashBefore);
     }
+    if (msg.type === 'adapt') adaptation.update(msg as unknown as FineTuneReport);
     if (msg.type === 'error') controls.setStatus(String(msg.message), 'bad');
   };
   worker.onerror = () => {
