@@ -64,14 +64,15 @@ export function processStroke(raw: V2[], halfWidth: number, mu: number): StrokeR
 /**
  * The S-curve the M4 acceptance test draws: a closed loop whose top side is an S
  * (offset amp * sin(2 pi u) * sin(pi u), tangent-continuous with the ends) between two
- * half-circle ends. World meters, centered on the origin, about 55 m around, minimum
- * corner radius about 3 m. The path is sampled the way a mouse reports it (steps of about
+ * half-circle ends. World meters, centered on the origin, about 44 m around, tightest
+ * corners about 2 m radius. It is deliberately tighter than the stage-0 ovals: the base policy drives it zero-shot in only
+ * some trainings, so the fine-tune has something to do. The path is sampled the way a mouse reports it (steps of about
  * 0.2 m) and ends 0.3 m from where it began, so the editor closes it.
  */
 export function sCurveStroke(): V2[] {
-  const half = 7; // half length of the straights
-  const r = 4; // end radius
-  const amp = 1.6; // S amplitude
+  const half = 6; // half length of the straights
+  const r = 3; // end radius
+  const amp = 2.8; // S amplitude
   const step = 0.2;
   const out: V2[] = [];
   const push = (x: number, z: number) => out.push({ x, z });

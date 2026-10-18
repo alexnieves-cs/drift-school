@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { closeEnds, processStroke, sCurveStroke, triangleStroke } from '../../src/editor/pipeline';
 import { decodeTrackHash, encodeTrackHash, quantizePoints } from '../../src/editor/share';
-import { relaxCurvature, resampleUniform, rotateToStraightest, toFloat, type V2 } from '../../src/editor/stroke';
+import { relaxCurvature, resampleUniform, rotateToStraightest, smoothStroke, toFloat, type V2 } from '../../src/editor/stroke';
 import { buildTrackFromPoints, validateTrack } from '../../src/track/build';
 import { simulateBaseline } from '../../src/track/baseline';
 import { makeRng } from '../../src/shared/rng';
@@ -135,9 +135,12 @@ describe('stroke helpers', () => {
   });
 
   it('rotateToStraightest starts the loop on a straight', () => {
-    const rotated = rotateToStraightest(sCurveStroke());
-    const flat = toFloat(rotated);
-    expect(validateTrack(flat, 1).ok).toBe(true);
+    // Start the stroke mid-corner: shift the loop by a quarter turn, then let the helper put it right.
+    const smooth = relaxCurvature(smoothStroke(sCurveStroke(), true), 1.3);
+    const shifted = smooth.slice(37).concat(smooth.slice(0, 37));
+    const rotated = rotateToStraightest(shifted);
+    expect(validateTrack(toFloat(rotated), 1).ok).toBe(true);
+    expect(rotated.length).toBeGreaterThan(50);
   });
 });
 
