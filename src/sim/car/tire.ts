@@ -28,13 +28,31 @@ export function pacejka(x: number, B: number, C: number, E: number, D: number): 
 }
 
 export function tireForces(i: TireInput): TireOut {
+  const out: TireOut = { Fx: 0, Fy: 0, slipAngle: 0, slipRatio: 0 };
+  tireForcesInto(out, i.vLong, i.vLat, i.omega, i.fz, i.mu0, i.loadSens, i.B, i.C, i.E);
+  return out;
+}
+
+/** Allocation-free `tireForces`: same arithmetic, result written into `out`. */
+export function tireForcesInto(
+  out: TireOut,
+  vLong: number,
+  vLat: number,
+  omega: number,
+  fz: number,
+  mu0: number,
+  loadSens: number,
+  B: number,
+  C: number,
+  E: number,
+): void {
   const eps = 0.35;
-  const slipAngle = Math.atan2(i.vLat, Math.abs(i.vLong));
-  const slipRatio = (i.omega * WHEEL_RADIUS - i.vLong) / Math.max(Math.abs(i.vLong), eps);
-  const mu = i.mu0 * Math.max(0.25, 1 - i.loadSens * (i.fz / FZ0));
-  const D = Math.max(0, mu * i.fz);
-  const Fx0 = pacejka(slipRatio, i.B, i.C, i.E, D);
-  const Fy0 = -pacejka(slipAngle, i.B, i.C, i.E, D);
+  const slipAngle = Math.atan2(vLat, Math.abs(vLong));
+  const slipRatio = (omega * WHEEL_RADIUS - vLong) / Math.max(Math.abs(vLong), eps);
+  const mu = mu0 * Math.max(0.25, 1 - loadSens * (fz / FZ0));
+  const D = Math.max(0, mu * fz);
+  const Fx0 = pacejka(slipRatio, B, C, E, D);
+  const Fy0 = -pacejka(slipAngle, B, C, E, D);
   let Fx = Fx0;
   let Fy = Fy0;
   const denom = Math.max(D, 1e-6);
@@ -43,12 +61,15 @@ export function tireForces(i: TireInput): TireOut {
     Fx /= ell;
     Fy /= ell;
   }
-  const speed = Math.hypot(i.vLong, i.vLat);
+  const speed = Math.hypot(vLong, vLat);
   const blend = speed >= 0.5 ? 1 : speed / 0.5;
   // Longitudinal force keeps the Pacejka value (drive/brake still works at rest).
   // Lateral force blends into a linear damper below 0.5 m/s to avoid the slip-angle singularity.
-  const damp = 1.1 * Math.max(i.fz, 0);
-  Fx += (1 - blend) * (-damp * i.vLong) * 0.15;
-  Fy = blend * Fy + (1 - blend) * (-damp * i.vLat);
-  return { Fx, Fy, slipAngle, slipRatio };
+  const damp = 1.1 * Math.max(fz, 0);
+  Fx += (1 - blend) * (-damp * vLong) * 0.15;
+  Fy = blend * Fy + (1 - blend) * (-damp * vLat);
+  out.Fx = Fx;
+  out.Fy = Fy;
+  out.slipAngle = slipAngle;
+  out.slipRatio = slipRatio;
 }

@@ -19,3 +19,18 @@ export function ackermann(delta: number, wheelbase: number, track: number): [num
   const right = Math.atan(wheelbase / (Rs - track / 2));
   return [left, right];
 }
+
+/** Allocation-free `ackermann`: writes (left, right) into out[0], out[1]. */
+export function ackermannInto(out: ArrayLike<number> & { [i: number]: number }, delta: number, wheelbase: number, track: number): void {
+  if (Math.abs(delta) < 1e-4) {
+    out[0] = delta;
+    out[1] = delta;
+    return;
+  }
+  const tan = Math.tan(delta);
+  const R = wheelbase / tan;
+  const innerLimit = track * 0.6;
+  const Rs = Math.abs(R) < innerLimit ? Math.sign(R || 1) * innerLimit : R;
+  out[0] = Math.atan(wheelbase / (Rs + track / 2));
+  out[1] = Math.atan(wheelbase / (Rs - track / 2));
+}

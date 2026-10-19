@@ -31,10 +31,10 @@ describe('trainer', () => {
     const t = new Trainer({ n: 4, horizon: 16, epochs: 1, minibatch: 32 });
     await t.init(pool());
     const base = defaultCarParams().mass;
-    expect(t.env.sampler!(0).cfg.car.mass).toBeCloseTo(base, 6);
+    expect(t.env.sampler!(0)!.cfg.car.mass).toBeCloseTo(base, 6);
     t.massScale = 2;
     t.dr = 'high';
-    const masses = Array.from({ length: 8 }, () => t.env.sampler!(0).cfg.car.mass);
+    const masses = Array.from({ length: 8 }, () => t.env.sampler!(0)!.cfg.car.mass);
     expect(Math.min(...masses)).toBeGreaterThan(base * 2 * 0.74);
     expect(new Set(masses.map((m) => m.toFixed(4))).size).toBeGreaterThan(4);
   });
@@ -45,7 +45,7 @@ describe('trainer', () => {
     t.setStage(2);
     let earlier = 0;
     const N = 2000;
-    for (let i = 0; i < N; i++) if (!t.env.sampler!(0).track.id.endsWith('-s2')) earlier++;
+    for (let i = 0; i < N; i++) if (!t.env.sampler!(0)!.track.id.endsWith('-s2')) earlier++;
     expect(Math.abs(earlier / N - 0.2)).toBeLessThan(0.04);
   });
 

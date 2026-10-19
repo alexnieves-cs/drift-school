@@ -2,7 +2,7 @@
  * `npm run eval` prints the SPEC section 3 acceptance table.
  *
  *   npm run eval                     every section
- *   npm run eval -- --only=stage0    comma list of: stage0, matrix, hotswap, fps
+ *   npm run eval -- --only=stage0    comma list of: stage0, matrix, hotswap, fps, physics
  *   npm run eval -- --quick          smaller sample sizes and shorter training
  *
  * Exit code is 1 when any row fails. Rows that cannot run here print "skip".
@@ -13,8 +13,9 @@ import { stage0 } from '../src/eval/stage0';
 import { matrix } from '../src/eval/matrix';
 import { hotswap } from '../src/eval/hotswap';
 import { fps } from '../src/eval/fps';
+import { physics } from '../src/eval/physics';
 
-const SECTIONS: Record<string, Section> = { stage0, hotswap, fps, matrix };
+const SECTIONS: Record<string, Section> = { stage0, hotswap, fps, matrix, physics };
 
 const args = process.argv.slice(2);
 const quick = args.includes('--quick');

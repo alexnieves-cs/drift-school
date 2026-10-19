@@ -6,6 +6,7 @@ import { defaultCarParams } from '../sim/car/params';
 import { latencyFor, noiseFor, sampleCar, type DRLevel } from '../sim/dr';
 import { generateTrack } from '../track/generate';
 import { GaussianPolicy, ensureBackend } from './model';
+import { episodeConfig, type ScenarioSet } from './scenarios';
 import { Curriculum } from './curriculum';
 import { TrackMix } from './trackMix';
 import { aggregateGen, type EpRecord } from './genStats';
@@ -17,14 +18,10 @@ export interface TrainerOpts {
   epochs?: number;
   minibatch?: number;
   clip?: number;
-  /** Seeds the policy init, exploration noise, minibatch shuffling and per-episode sampling. */
+  /** Seeds weight init, exploration noise, episode DR and scenario sampling. */
   seed?: number;
+  lr?: number;
 }
-
-const GAMMA = 0.99;
-const LAMBDA = 0.95;
-/** PPO updates after an imitation warm start that train only the critic, so a random value head cannot wreck the policy. */
-const CRITIC_WARMUP_UPDATES = 3;
 
 /** Progress on a drawn track since the last fine-tune swap. */
 export interface AdaptStats {
@@ -42,6 +39,8 @@ export interface AdaptStats {
 
 const FIRST_EPISODES = 64;
 const WINDOW = 64;
+const GAMMA = 0.99;
+const LAMBDA = 0.95;
 
 const mean = (xs: boolean[]): number | null => (xs.length ? xs.filter(Boolean).length / xs.length : null);
 
@@ -56,23 +55,26 @@ export class Trainer {
   epochs: number;
   minibatch: number;
   clip: number;
+  /** Multiplies the entropy bonus (TrackMix owns the base value). */
+  entropyScale = 1;
+  /** In scenario mode, redraw every slot's scenario at the start of each update. */
+  freshEpisodesPerUpdate = true;
+  /** false trains the value head only (critic warm-up before PPO touches an imitation policy). */
+  trainPolicy = true;
+  readonly seed: number;
   dr: DRLevel = 'off';
   grip = 1;
   massScale = 1;
   private obs: Float32Array;
   private ready = false;
+  /** Per-episode draws (stage replay, track, DR) when an episode ends mid-rollout. */
   private readonly rng: RNG;
   private episodeCount = 0;
   /** Procedural seeds the pool was built from. Other stages regenerate from the same seeds. */
   private seeds: number[] = [];
   private stagePools = new Map<number, TrackSpec[]>();
-  private criticWarmup = 0;
   private procWindow: boolean[] = [];
   private adapt: { trackId: string; updates: number; first: boolean[]; recent: boolean[]; bestLap: number | null; procBefore: number | null } | null = null;
-  /** Called after every env step during a rollout, e.g. to stream poses. */
-  onStep: (() => void) | null = null;
-  /** Hand control back to the host event loop every this many rollout steps (0 = never). */
-  yieldEvery = 0;
   bestLap: number | null = null;
   readonly history: GenStat[] = [];
   /** Best-lap pose tape per generation, for leaderboard replay. */
@@ -80,10 +82,10 @@ export class Trainer {
 
   constructor(opts: TrainerOpts = {}) {
     const n = opts.n ?? 16;
-    const seed = opts.seed ?? 1;
     this.env = new VecEnv(n);
-    this.policy = new GaussianPolicy(3e-4, seed);
-    this.rng = makeRng(seed, 'trainer');
+    this.seed = opts.seed ?? 1;
+    this.policy = new GaussianPolicy(opts.lr ?? 3e-4, this.seed);
+    this.rng = makeRng(this.seed, 'trainer');
     this.horizon = opts.horizon ?? 64;
     this.epochs = opts.epochs ?? 3;
     this.minibatch = opts.minibatch ?? 256;
@@ -112,15 +114,53 @@ export class Trainer {
     return pool.length ? pool : this.mix.tracks;
   }
 
-  /** Jump to a curriculum stage. Outside fine-tune mode the track pool becomes that stage's tracks. */
+  /**
+   * Jump to a curriculum stage. Scenario mode reads the stage on its next draw; with a plain
+   * procedural pool (and no fine-tune running) the pool becomes that stage's tracks.
+   */
   setStage(stage: number): void {
     this.curriculum.stage = Math.max(0, Math.min(4, Math.round(stage)));
     this.curriculum.resetWindow();
-    if (!this.mix.userId && this.seeds.length) this.mix.setPool(this.poolFor(this.curriculum.stage));
+    if (!this.scenarioActive && !this.mix.userId && this.seeds.length) this.mix.setPool(this.poolFor(this.curriculum.stage));
   }
 
-  private cfg(track: TrackSpec, salt: number, stage = this.curriculum.stage): EpisodeConfig {
-    const rng = makeRng(salt + (track.seed ?? 0) * 7919, `dr/${track.id}`);
+  /**
+   * Next episode for a slot whose episode just ended: 20% replay of earlier stages, the
+   * fine-tune mix, fresh DR. Scenario mode keeps the slot as is until the next `resetEnvs`
+   * (the recipe redraws every slot per rollout), so the measured training recipe is unchanged.
+   */
+  private sampleEpisode(slot: number): { track: TrackSpec; cfg: EpisodeConfig } | null {
+    if (this.scenarioActive) return null;
+    const stage = this.curriculum.sampleStage(this.rng);
+    const replay = !this.mix.userId && stage !== this.curriculum.stage;
+    const pool = replay ? this.poolFor(stage) : null;
+    const track = pool ? pool[this.rng.int(pool.length)]! : this.mix.sample(this.rng);
+    return { track, cfg: this.cfg(track, slot, stage, ++this.episodeCount * 131 + slot) };
+  }
+
+  /**
+   * Stage pools with per-stage DR and surface mixes. While set (and until a hot-swap replaces
+   * the TrackMix pool), `resetEnvs` draws scenarios from here using `curriculum.stage`.
+   */
+  scenarios: ScenarioSet | null = null;
+  private scenarioPool: TrackSpec[] | null = null;
+  private resets = 0;
+
+  setScenarios(set: ScenarioSet): void {
+    this.scenarios = set;
+    this.mix.setPool(set.tracks(0));
+    this.scenarioPool = this.mix.tracks;
+  }
+
+  /** True while scenario sampling (not a swapped-in TrackMix pool) drives the env. */
+  get scenarioActive(): boolean {
+    return !!this.scenarios && this.scenarioPool === this.mix.tracks;
+  }
+
+  /** `salt` gives a per-episode draw; without it the draw is fixed per update and slot. */
+  private cfg(track: TrackSpec, i: number, stage = this.curriculum.stage, salt?: number): EpisodeConfig {
+    const base = salt ?? (this.gen + 1) * 10007 + i * 13;
+    const rng = makeRng(base + (track.seed ?? 0) + this.seed * 7919, `dr/${track.id}`);
     let car = sampleCar(defaultCarParams(), rng, this.dr, this.grip);
     car = { ...car, mass: car.mass * this.massScale };
     car.yawInertia *= this.massScale;
@@ -131,39 +171,47 @@ export class Trainer {
       latencyTicks: latencyFor(rng, this.dr),
       trackId: track.id,
       lapsTarget: stage <= 1 ? 1 : 2,
-      seed: salt + (track.seed ?? 0),
+      seed: (track.seed ?? 0) + (salt ?? i + this.gen),
     };
   }
 
-  /** Track and car for the next episode: 20% replay of earlier stages, the fine-tune mix, fresh DR. */
-  private sampleEpisode(slot: number): { track: TrackSpec; cfg: EpisodeConfig } {
-    const stage = this.curriculum.sampleStage(this.rng);
-    const track = this.mix.userId || stage === this.curriculum.stage ? this.mix.sample(this.rng) : this.replayTrack(stage);
-    return { track, cfg: this.cfg(track, ++this.episodeCount * 131 + slot, stage) };
-  }
-
-  private replayTrack(stage: number): TrackSpec {
-    const pool = this.poolFor(stage);
-    return pool[this.rng.int(pool.length)]!;
-  }
-
-  /** `all` puts every env on one track (the zero-shot start after a swap); otherwise each draws from the mix. */
-  private resetEnvs(all?: TrackSpec): void {
+  /** Fresh episodes on every slot. Public so the recipe can draw new scenarios per rollout. */
+  /** `all` puts every env on one track (the zero-shot start after a fine-tune swap); otherwise each draws as usual. */
+  resetEnvs(all?: TrackSpec): void {
     const tracks: TrackSpec[] = [];
     const cfgs: EpisodeConfig[] = [];
+    this.resets++;
+    const scenario = this.scenarioActive;
+    // The TrackMix path keeps the original draw (gen + 3) so swap behaviour is unchanged.
+    const rng = makeRng(scenario ? this.seed * 977 + this.gen + this.resets * 31 + 3 : this.gen + 3, 'pool');
     for (let i = 0; i < this.env.n; i++) {
-      const track = all ?? this.mix.sample(this.rng);
-      tracks.push(track);
-      cfgs.push(this.cfg(track, ++this.episodeCount * 131 + i));
+      if (all) {
+        tracks.push(all);
+        cfgs.push(this.cfg(all, i));
+      } else if (scenario) {
+        // A DR level chosen in the UI (setDR) overrides the stage profile.
+        const sc = this.scenarios!.sample(rng, Math.min(3, this.curriculum.stage), this.dr !== 'off' ? { dr: this.dr } : undefined);
+        tracks.push(sc.track);
+        cfgs.push(
+          episodeConfig(sc, this.seed * 7919 + this.resets * 101 + this.gen + 1, i, {
+            grip: this.grip,
+            massScale: this.massScale,
+          }),
+        );
+      } else {
+        const track = this.mix.sample(rng);
+        tracks.push(track);
+        cfgs.push(this.cfg(track, i));
+      }
     }
     const obs = this.env.reset(tracks, cfgs);
     this.obs.set(obs);
   }
 
   /**
-   * Hot-swap. `forceSwap` resets every env onto the new pool right away, without touching
-   * the weights. SPEC asks for envs to finish their episode first; resetting at once keeps
-   * the swap well inside the 15 s budget.
+   * Hot-swap. In-flight episodes keep rolling; callers should invoke
+   * `applySwapWhenReady` after the current episodes terminate, or call
+   * `forceSwap` which resets immediately without touching weights.
    */
   pendingTracks: TrackSpec[] | null = null;
   pendingFine = false;
@@ -176,7 +224,6 @@ export class Trainer {
   forceSwap(): void {
     if (!this.pendingTracks?.length) return;
     const tracks = this.pendingTracks;
-    const before = this.weightHash();
     if (this.pendingFine) {
       const user = tracks[0]!;
       const rest = tracks.slice(1);
@@ -186,6 +233,7 @@ export class Trainer {
       this.mix.userId = null;
       this.mix.setPool(tracks);
     }
+    const before = this.weightHash();
     // After a fine-tune swap every env starts on the user track; later episodes follow the 70/30 mix.
     this.resetEnvs(this.pendingFine ? tracks[0] : undefined);
     if (this.pendingFine) {
@@ -211,14 +259,33 @@ export class Trainer {
     };
   }
 
+  // --- Hot-swap support used by rl/finetune.ts (acc/swap). Additive; nothing above changed. ---
+
+  /** Episode config for `track` in env slot `i`, same DR draw `resetEnvs` uses. */
+  configFor(track: TrackSpec, i: number): EpisodeConfig {
+    return this.cfg(track, i);
+  }
+
+  /** Rollout without learning: sampled-policy steps, no gradient update, weights untouched. */
+  rolloutNoUpdate(steps: number): void {
+    const n = this.env.n;
+    for (let t = 0; t < steps; t++) {
+      const { action } = this.policy.act(this.obs, n);
+      const stepped = this.env.step(action);
+      this.obs.set(stepped.obs);
+    }
+  }
+
+  /** Re-read the env's current observation after something else stepped or retargeted it. */
+  syncObs(): void {
+    this.obs.set(this.env.obs);
+  }
+
   weightHash(): string {
     return hashBuffers(this.policy.getWeights());
   }
 
-  /**
-   * Supervised warm start: regress the mean action toward pure-pursuit on the current pool.
-   * Follows up with critic-only PPO updates (see `CRITIC_WARMUP_UPDATES`).
-   */
+  /** Supervised warm start: regress the mean action toward pure-pursuit on the current pool. */
   async imitate(batches = 8): Promise<number> {
     if (!this.ready) throw new Error('trainer not initialized');
     const n = this.env.n;
@@ -234,9 +301,8 @@ export class Trainer {
         const stepped = this.env.step(a);
         this.obs.set(stepped.obs);
       }
-      for (let e = 0; e < 8; e++) last = this.policy.imitate(obsBuf, actBuf, T * n);
+      for (let e = 0; e < 3; e++) last = this.policy.imitate(obsBuf, actBuf, T * n);
     }
-    this.criticWarmup = CRITIC_WARMUP_UPDATES;
     return last;
   }
 
@@ -252,14 +318,15 @@ export class Trainer {
     }
     const sampler = this.env.sampler;
     this.env.sampler = null;
+    const from = this.env.finished.length;
     this.env.reset(tracks, cfgs);
     const obs = new Float32Array(this.env.obs);
-    for (let t = 0; t < maxSteps && this.env.finished.length < episodes; t++) {
+    for (let t = 0; t < maxSteps && this.env.finished.length - from < episodes; t++) {
       const action = this.policy.actMean(obs, this.env.n);
       const stepped = this.env.step(action);
       obs.set(stepped.obs);
     }
-    const laps = this.env.finished.slice(0, episodes).filter((e) => e.lap).length;
+    const laps = this.env.finished.slice(from, from + episodes).filter((e) => e.lap).length;
     this.env.sampler = sampler;
     this.resetEnvs();
     return laps / episodes;
@@ -270,6 +337,7 @@ export class Trainer {
     const n = this.env.n;
     const T = this.horizon;
     const obsBuf = new Float32Array(T * n * OBS_DIM);
+    const actBuf = new Float32Array(T * n * ACT_DIM);
     const preBuf = new Float32Array(T * n * ACT_DIM);
     const logBuf = new Float32Array(T * n);
     const valBuf = new Float32Array(T * n);
@@ -280,15 +348,19 @@ export class Trainer {
     let steps = 0;
     const episodes: EpRecord[] = [];
     const replayFrames: number[] = [];
-    this.env.finished.length = 0;
+    // Scenario mode: every rollout starts from fresh tracks / DR / surfaces so DR is resampled per episode.
+    if (this.scenarioActive && this.freshEpisodesPerUpdate) this.resetEnvs();
 
     for (let t = 0; t < T; t++) {
-      const { action, pre, logp, value } = this.policy.act(this.obs, n);
+      const { action, logp, value, pre } = this.policy.act(this.obs, n);
       obsBuf.set(this.obs, t * n * OBS_DIM);
+      actBuf.set(action, t * n * ACT_DIM);
       preBuf.set(pre, t * n * ACT_DIM);
       logBuf.set(logp, t * n);
       valBuf.set(value, t * n);
+      const before = this.env.finished.length;
       const stepped = this.env.step(action);
+      for (let k = before; k < this.env.finished.length; k++) episodes.push(this.env.finished[k]!);
       for (let i = 0; i < n; i++) {
         const raw = stepped.rew[i]!;
         this.rewardScale.update(raw);
@@ -300,20 +372,17 @@ export class Trainer {
       steps += n;
       if (t % 2 === 0) {
         const pose = this.env.poses();
-        for (let k = 0; k < 7; k++) replayFrames.push(pose[k]!);
+        const base = 0;
+        for (let k = 0; k < 7; k++) replayFrames.push(pose[base + k]!);
       }
-      this.onStep?.();
-      if (this.yieldEvery > 0 && (t + 1) % this.yieldEvery === 0) await new Promise<void>((r) => setTimeout(r, 0));
     }
-    for (const ep of this.env.finished) episodes.push(ep);
-    this.env.finished.length = 0;
 
+    const adv = new Float32Array(T * n);
+    const ret = new Float32Array(T * n);
     // GAE. A true termination bootstraps from 0. A time-limit cut has no terminal observation
     // (the env already reset), so it bootstraps from its own value estimate. A rollout that ends
     // mid-episode bootstraps from V(obs after the last step).
-    const lastValue = this.policy.valueOf(this.obs, n);
-    const adv = new Float32Array(T * n);
-    const ret = new Float32Array(T * n);
+    const lastValue = this.policy.act(this.obs, n).value;
     for (let i = 0; i < n; i++) {
       let gae = 0;
       for (let t = T - 1; t >= 0; t--) {
@@ -329,56 +398,58 @@ export class Trainer {
         ret[idx] = gae + valBuf[idx]!;
       }
     }
-    let mean = 0;
-    for (let i = 0; i < adv.length; i++) mean += adv[i]!;
-    mean /= adv.length;
+    let advMean = 0;
+    for (let i = 0; i < adv.length; i++) advMean += adv[i]!;
+    advMean /= adv.length;
     let varr = 0;
-    for (let i = 0; i < adv.length; i++) varr += (adv[i]! - mean) ** 2;
+    for (let i = 0; i < adv.length; i++) varr += (adv[i]! - advMean) ** 2;
     const std = Math.sqrt(varr / adv.length) + 1e-8;
-    for (let i = 0; i < adv.length; i++) adv[i] = (adv[i]! - mean) / std;
+    for (let i = 0; i < adv.length; i++) adv[i] = (adv[i]! - advMean) / std;
 
     const total = T * n;
-    const policyScale = this.criticWarmup > 0 ? 0 : 1;
-    if (this.criticWarmup > 0) this.criticWarmup--;
-    const order = new Uint32Array(total);
-    const mObs = new Float32Array(this.minibatch * OBS_DIM);
-    const mPre = new Float32Array(this.minibatch * ACT_DIM);
-    const mLog = new Float32Array(this.minibatch);
-    const mAdv = new Float32Array(this.minibatch);
-    const mRet = new Float32Array(this.minibatch);
     let kl = 0;
     let ent = 0;
     let vloss = 0;
     let loss = 0;
     let updates = 0;
+    const shuffle = makeRng(this.seed * 313 + this.gen, 'ppo/shuffle');
+    const perm = new Int32Array(total);
+    const mo = new Float32Array(this.minibatch * OBS_DIM);
+    const ma = new Float32Array(this.minibatch * ACT_DIM);
+    const mpre = new Float32Array(this.minibatch * ACT_DIM);
+    const mlp = new Float32Array(this.minibatch);
+    const mad = new Float32Array(this.minibatch);
+    const mrt = new Float32Array(this.minibatch);
     for (let e = 0; e < this.epochs; e++) {
-      for (let i = 0; i < total; i++) order[i] = i;
+      for (let i = 0; i < total; i++) perm[i] = i;
       for (let i = total - 1; i > 0; i--) {
-        const j = this.rng.int(i + 1);
-        const tmp = order[i]!;
-        order[i] = order[j]!;
-        order[j] = tmp;
+        const j = shuffle.int(i + 1);
+        const tmp = perm[i]!;
+        perm[i] = perm[j]!;
+        perm[j] = tmp;
       }
       for (let start = 0; start < total; start += this.minibatch) {
         const bs = Math.min(this.minibatch, total - start);
         for (let k = 0; k < bs; k++) {
-          const src = order[start + k]!;
-          mObs.set(obsBuf.subarray(src * OBS_DIM, (src + 1) * OBS_DIM), k * OBS_DIM);
-          mPre.set(preBuf.subarray(src * ACT_DIM, (src + 1) * ACT_DIM), k * ACT_DIM);
-          mLog[k] = logBuf[src]!;
-          mAdv[k] = adv[src]!;
-          mRet[k] = ret[src]!;
+          const idx = perm[start + k]!;
+          mo.set(obsBuf.subarray(idx * OBS_DIM, (idx + 1) * OBS_DIM), k * OBS_DIM);
+          ma.set(actBuf.subarray(idx * ACT_DIM, (idx + 1) * ACT_DIM), k * ACT_DIM);
+          mpre.set(preBuf.subarray(idx * ACT_DIM, (idx + 1) * ACT_DIM), k * ACT_DIM);
+          mlp[k] = logBuf[idx]!;
+          mad[k] = adv[idx]!;
+          mrt[k] = ret[idx]!;
         }
         const stats = this.policy.ppoLoss(
-          mObs.subarray(0, bs * OBS_DIM),
-          mPre.subarray(0, bs * ACT_DIM),
-          mLog.subarray(0, bs),
-          mAdv.subarray(0, bs),
-          mRet.subarray(0, bs),
+          mo.subarray(0, bs * OBS_DIM),
+          ma.subarray(0, bs * ACT_DIM),
+          mlp.subarray(0, bs),
+          mad.subarray(0, bs),
+          mrt.subarray(0, bs),
           bs,
           this.clip,
-          this.mix.entropy,
-          policyScale,
+          this.mix.entropy * this.entropyScale,
+          this.trainPolicy,
+          mpre.subarray(0, bs * ACT_DIM),
         );
         kl += stats.kl;
         ent += stats.entropy;
@@ -402,7 +473,9 @@ export class Trainer {
       this.curriculum.note({ completed: ep.lap, lapTime: ep.lapTime, tRef: ep.tRef });
       if (ep.lapTime && (this.bestLap === null || ep.lapTime < this.bestLap)) this.bestLap = ep.lapTime;
     }
-    if (this.curriculum.maybePromote() && !this.mix.userId) this.mix.setPool(this.poolFor(this.curriculum.stage));
+    if (this.curriculum.maybePromote() && !this.scenarioActive && !this.mix.userId && this.seeds.length) {
+      this.mix.setPool(this.poolFor(this.curriculum.stage));
+    }
     if (this.pendingTracks) this.forceSwap();
     this.replays.set(this.gen + 1, Float32Array.from(replayFrames));
     this.gen++;

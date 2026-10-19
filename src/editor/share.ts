@@ -14,6 +14,17 @@ function unb64url(s: string): Uint8Array {
   return out;
 }
 
+/**
+ * Snap control points to whole millimeters. The learner builds the user track from the
+ * snapped points, so the track id (a hash of its samples) is the same before and after a
+ * round trip through the URL hash.
+ */
+export function quantizePoints(points: ArrayLike<number>): Float32Array {
+  const out = new Float32Array(points.length);
+  for (let i = 0; i < points.length; i++) out[i] = Math.round(points[i]! * 1000) / 1000;
+  return out;
+}
+
 /** Quantize to millimeters so a round trip stays inside 1 mm. */
 export function encodeTrackHash(points: Float32Array, halfWidth: number, mu: number): string {
   const n = points.length;

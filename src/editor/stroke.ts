@@ -85,13 +85,53 @@ export function resamplePolyline(points: V2[], spacing: number, closed: boolean)
   return out;
 }
 
+/**
+ * RDP, then Chaikin x2, then the curvature limiter. A closed stroke is smoothed as a loop and
+ * returned without a repeated first point.
+ */
+export function smoothStroke(points: V2[], closed: boolean, halfWidth = 1): V2[] {
+  const body = closed ? trimClosingTail(points) : points;
+  let cur = rdp(body, 0.12);
+  for (let i = 0; i < 2; i++) cur = chaikin(cur, closed);
+  cur = resamplePolyline(cur, 0.3, closed);
+  return limitCurvature(cur, closed, 0.7 / halfWidth);
+}
+
+/** Resample a polyline (open or closed) to a uniform arc-length spacing. */
+export function resampleUniform(points: V2[], spacing: number, closed: boolean): V2[] {
+  const n = points.length;
+  if (n < 3) return points.slice();
+  const pts = closed ? [...points, points[0]!] : points;
+  const cum: number[] = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1]! + dist(pts[i - 1]!, pts[i]!));
+  const total = cum[cum.length - 1]!;
+  const count = Math.max(closed ? 8 : 2, Math.round(total / spacing));
+  const out: V2[] = [];
+  let seg = 0;
+  const last = closed ? count : count + 1;
+  for (let k = 0; k < last; k++) {
+    const target = (total * k) / count;
+    while (seg < pts.length - 2 && cum[seg + 1]! < target) seg++;
+    const a = pts[seg]!;
+    const b = pts[seg + 1]!;
+    const len = cum[seg + 1]! - cum[seg]! || 1;
+    const t = Math.max(0, Math.min(1, (target - cum[seg]!) / len));
+    out.push({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t });
+  }
+  return out;
+}
+
 function turnCurvature(a: V2, b: V2, c: V2): number {
-  const ab = dist(a, b);
-  const bc = dist(b, c);
-  const ac = dist(a, c);
-  const area2 = Math.abs((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x));
-  const den = ab * bc * ac;
-  return den < 1e-9 ? 0 : (2 * area2) / den;
+  const abx = b.x - a.x;
+  const abz = b.z - a.z;
+  const bcx = c.x - b.x;
+  const bcz = c.z - b.z;
+  const cross = abx * bcz - abz * bcx;
+  const la = Math.hypot(abx, abz);
+  const lb = Math.hypot(bcx, bcz);
+  const lc = Math.hypot(c.x - a.x, c.z - a.z);
+  const denom = la * lb * lc;
+  return denom < 1e-9 ? 0 : (2 * Math.abs(cross)) / denom;
 }
 
 /**
@@ -123,16 +163,68 @@ export function limitCurvature(points: V2[], closed: boolean, maxCurvature: numb
   return cur;
 }
 
+
 /**
- * RDP, then Chaikin x2, then the curvature limiter. A closed stroke is smoothed as a loop and
- * returned without a repeated first point.
+ * Curvature limiter (SPEC editor section): resample a closed stroke uniformly, low-pass it, then
+ * relax every point whose turn radius is below `minRadius` toward its neighbors until none
+ * is, so Chaikin corners on an uneven RDP polygon cannot pinch the track edges.
  */
-export function smoothStroke(points: V2[], closed: boolean, halfWidth = 1): V2[] {
-  const body = closed ? trimClosingTail(points) : points;
-  let cur = rdp(body, 0.12);
-  for (let i = 0; i < 2; i++) cur = chaikin(cur, closed);
-  cur = resamplePolyline(cur, 0.3, closed);
-  return limitCurvature(cur, closed, 0.7 / halfWidth);
+export function relaxCurvature(points: V2[], minRadius: number, spacing = 0.4, maxIter = 120): V2[] {
+  let cur = resampleUniform(points, spacing, true);
+  const n = cur.length;
+  if (n < 8) return cur;
+  // Low-pass first. A mouse reports whole pixels (4 cm here), and that tremor, sampled by a
+  // 0.1 m spline, reads as curvature spikes the 0.4 m polyline test below cannot see.
+  for (let pass = 0; pass < 4; pass++) {
+    cur = cur.map((b, i) => {
+      const a = cur[(i - 1 + n) % n]!;
+      const c = cur[(i + 1) % n]!;
+      return { x: b.x * 0.5 + (a.x + c.x) * 0.25, z: b.z * 0.5 + (a.z + c.z) * 0.25 };
+    });
+  }
+  const limit = 1 / minRadius;
+  for (let iter = 0; iter < maxIter; iter++) {
+    const bad: number[] = [];
+    for (let i = 0; i < n; i++) {
+      if (turnCurvature(cur[(i - 1 + n) % n]!, cur[i]!, cur[(i + 1) % n]!) > limit) bad.push(i);
+    }
+    if (!bad.length) break;
+    const next = cur.slice();
+    const mark = new Set<number>();
+    for (const i of bad) for (let d = -1; d <= 1; d++) mark.add((i + d + n) % n);
+    for (const i of mark) {
+      const a = cur[(i - 1 + n) % n]!;
+      const b = cur[i]!;
+      const c = cur[(i + 1) % n]!;
+      next[i] = { x: b.x * 0.5 + (a.x + c.x) * 0.25, z: b.z * 0.5 + (a.z + c.z) * 0.25 };
+    }
+    cur = next;
+  }
+  return cur;
+}
+
+/**
+ * Start the closed loop where it is straightest (the validator wants a straight start line,
+ * and where the user happened to begin drawing says nothing about that). Input is resampled
+ * uniformly first.
+ */
+export function rotateToStraightest(points: V2[], spacing = 0.4, windowMeters = 2): V2[] {
+  const pts = resampleUniform(points, spacing, true);
+  const n = pts.length;
+  if (n < 12) return pts;
+  const k = pts.map((p, i) => turnCurvature(pts[(i - 1 + n) % n]!, p, pts[(i + 1) % n]!));
+  const w = Math.max(3, Math.round(windowMeters / spacing));
+  let best = 0;
+  let bestScore = Infinity;
+  for (let i = 0; i < n; i++) {
+    let score = 0;
+    for (let j = 0; j < w; j++) score += k[(i + j) % n]!;
+    if (score < bestScore) {
+      bestScore = score;
+      best = i;
+    }
+  }
+  return pts.slice(best).concat(pts.slice(0, best));
 }
 
 export function toFloat(points: V2[]): Float32Array {
