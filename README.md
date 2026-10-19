@@ -11,7 +11,7 @@
 
 The cars run on a vehicle model written for this project: Pacejka tires, four spring-damper suspensions with real weight transfer, a motor curve and a rate-limited steering servo, stepped at 500 Hz. A PPO policy trains in a Web Worker beside it, rendering is Three.js (WebGPU when the browser offers it, WebGL2 otherwise), and everything is deterministic from a seed. Draw a loop, press **Train on this**, and the new track is hot-swapped into the running training session without touching the weights.
 
-The clip above is a timelapse of the live app: a track drawn with the mouse, validated in under 25 ms, swapped into training, then lapped. Its source is in [`scripts/record-demos.mjs`](scripts/record-demos.mjs).
+The clip above is a timelapse of the live app: a track drawn with the mouse, validated in 8 ms, swapped into training, then lapped. Its source is in [`scripts/record-demos.mjs`](scripts/record-demos.mjs).
 
 ## What's in it
 
@@ -32,9 +32,9 @@ The [spec](SPEC.md) lists five moments to show off. This table says which are re
 
 | # | Moment | Clip | Status |
 | --- | --- | --- | --- |
-| 1 | 64 cars learn to lap | [GIF](docs/media/demo-race.gif) · [MP4](docs/media/demo-race.mp4) | **Partly.** 64 cars train live and lap a generated track. They do not spin out first and then learn: the policy starts as a clone of the pure-pursuit controller (see below). |
-| 2 | Generation-best lap time drops | same clip | **Partly.** In the recorded run the best lap per update fell from a median of 9.0 s (first five lap-finishing updates) to 6.2 s (last five) over about 28 updates on a short stage-0 track. The 40 s to 14 s story in the spec is not shown. |
-| 3 | Draw a hairpin, hot-swap, re-learn | [GIF](docs/media/demo-draw-hairpin.gif) · [MP4](docs/media/demo-draw-hairpin.mp4) | **Hot-swap yes, re-learning no.** The drawn track is validated, swapped in with the weight hash unchanged, and the cars lap it. The in-app readout shows 100% completion on it with no crash-and-relearn phase: the cloned policy drives it from the start. |
+| 1 | 64 cars learn to lap | [GIF](docs/media/demo-race.gif) · [MP4](docs/media/demo-race.mp4) | **Partly.** 64 cars train live and lap generated tracks. They do not spin out first and then learn: the policy is first distilled from the pure-pursuit controller (see below). |
+| 2 | Generation-best lap time drops | same clip | **No.** In the recorded run the best lap per update stayed flat over 182 updates: a median of 8.8 s in the first five lap-finishing updates and 9.1 s in the last five. The 40 s to 14 s story in the spec is not shown. |
+| 3 | Draw a hairpin, hot-swap, re-learn | [GIF](docs/media/demo-draw-hairpin.gif) · [MP4](docs/media/demo-draw-hairpin.mp4) | **Hot-swap yes, re-learning partly.** The drawn track is validated, every car is on it 1.6 s after the click, and the weight hash is unchanged. The cars complete 100% of laps on it before any update, so there is no crash-and-relearn phase. The best lap on it falls from 13.7 s to 12.1 s over three minutes of fine-tuning. |
 | 4 | In-car POV, countersteer drift | [GIF](docs/media/demo-hairpin-pov.gif) · [MP4](docs/media/demo-hairpin-pov.mp4) | **POV yes, drift no.** The POV camera and HUD are real, driving a real vehicle model through a hairpin. A controlled drift with countersteer on a track is not demonstrated. |
 | 5 | Dry to ice, brakes earlier, still finishes | [POV](docs/media/demo-hairpin-pov.gif) · [chase](docs/media/demo-hairpin-chase.gif) | **Real, with the baseline driver.** The pure-pursuit controller laps the same hairpin dry (16.4 s) and on ice (22.6 s, top speed 5.0 vs 5.6 m/s). The learned policy is not driving in this clip. |
 
@@ -81,7 +81,7 @@ flowchart LR
 1. **Observation.** 48 floats: 21 range rays, body-frame speeds, slip angles, wheel-load shares, the previous action, and track-relative features (offset, heading error, curvature ahead). Layout in [`src/sim/OBS_LAYOUT.md`](src/sim/OBS_LAYOUT.md).
 2. **Action.** Steer and throttle in [-1, 1]. Negative throttle brakes, then reverses.
 3. **Reward.** Progress along the centerline, lap and lap-time bonuses, minus penalties for leaving the track, hitting walls, jerky inputs, going the wrong way and wasting time.
-4. **Imitation first, then PPO.** From-scratch PPO at the throughput of CPU TF.js did not learn laps in minutes. So the training recipe (`src/rl/recipe.ts`) distils the pure-pursuit controller into the policy with DAgger, stage by stage from 0 to 3, under domain randomization and mixed surfaces. Then it runs a short PPO phase (critic warm-up, a tight clip, GAE) whose updates are reverted unless they help on held-out validation seeds. Nearly all of the driving skill comes from the imitation. Read the reward curve as fine-tuning, not as learning from nothing.
+4. **Imitation first, then PPO.** From-scratch PPO at the throughput of CPU TF.js did not learn laps in minutes. So the training recipe (`src/rl/recipe.ts`) distils the pure-pursuit controller into the policy with DAgger, stage by stage from 0 to 3, under domain randomization and mixed surfaces. Then it runs a short PPO phase (critic warm-up, a tight clip, GAE) whose updates are reverted unless they help on held-out validation seeds. Nearly all of the driving skill comes from the imitation. In the browser the recipe runs for stage 0 only on a shorter schedule, then plain PPO keeps running. Read the reward curve as fine-tuning, not as learning from nothing.
 5. **Curriculum.** Five stages, from a wide oval to narrow hairpins, with 20% replay of earlier stages.
 6. **Hot-swap.** "Train on this" lets each car finish its running episode, then restarts it on your track (any car still mid-lap after 8 s is moved anyway). No gradient step runs during the swap, so the weight hash is unchanged. The fine-tune then mixes 70% your track and 30% procedural replay, and interleaves PPO updates with DAgger batches labelled by the pure-pursuit controller. The base checkpoint is saved and the new weights are forked under the track's hash.
 

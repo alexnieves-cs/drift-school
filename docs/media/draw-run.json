@@ -1,190 +1,570 @@
 {
-  "editor": "valid 12.9 ms",
+  "editor": "valid 7.9 ms",
   "adaptation": [
     {
       "t": 0,
-      "adapt": "gen 9 completion 100%",
-      "text": "valid 12.9 ms",
-      "track": "gen-3-s0",
+      "panel": {
+        "phase": "drain",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "text": "finishing episodes: 3/16 envs on the new track"
+      },
+      "track": "gen-7-s0",
       "board": [
         {
-          "gen": 9,
-          "best": 7.98,
-          "mean": 7.98,
-          "done": 1,
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
           "crash": 0,
-          "vmax": 6.7
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 1,
+      "panel": {
+        "phase": "drain",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "text": "finishing episodes: 11/16 envs on the new track"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 2,
-      "adapt": "gen 9 completion 100%",
-      "text": "valid 12.9 ms",
-      "track": "gen-3-s0",
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 9,
-          "best": 7.98,
-          "mean": 7.98,
-          "done": 1,
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
           "crash": 0,
-          "vmax": 6.7
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 3,
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 4,
-      "adapt": "track user-944e1d27 envs 16 weights unchanged",
-      "text": "valid 12.9 ms",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 10,
-          "best": 7.9,
-          "mean": 8.25,
-          "done": 1,
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
           "crash": 0,
-          "vmax": 7.4
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 5,
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 6,
-      "adapt": "gen 11 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 1 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 11,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 7,
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 8,
-      "adapt": "gen 11 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 1 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 11,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 9,
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 9,
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 10,
-      "adapt": "gen 12 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 2 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "zeroShot",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "text": "zero-shot episodes: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged so far"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 12,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 11,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "0",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 0 (0 PPO, 0 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 12,
-      "adapt": "gen 13 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 3 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "1",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 1 (0 PPO, 3 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 13,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 13,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "2",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 2 (0 PPO, 6 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 14,
-      "adapt": "gen 14 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 4 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "2",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 2 (0 PPO, 6 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 14,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 15,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "3",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 3 (0 PPO, 9 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 16,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "4",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 4 (0 PPO, 12 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 17,
-      "adapt": "gen 14 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 4 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "4",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 4 (0 PPO, 12 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 14,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 18,
-      "adapt": "gen 15 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 5 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "5",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 5 (0 PPO, 15 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 15,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 19,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "6",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 6 (0 PPO, 18 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 20,
-      "adapt": "gen 16 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 6 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "6",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 6 (0 PPO, 18 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 16,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 21,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "7",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 7 (0 PPO, 21 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
         }
       ]
     },
     {
       "t": 22,
-      "adapt": "gen 17 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 7 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "8",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 8 (0 PPO, 24 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 17,
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 23,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "8",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 8 (0 PPO, 24 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 30,
+          "best": 9.32,
+          "mean": 9.32,
+          "done": 0.5,
+          "crash": 0,
+          "vmax": 3.7
+        }
+      ]
+    },
+    {
+      "t": 24,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "9",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 9 (1 PPO, 27 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 31,
           "best": null,
           "mean": null,
           "done": null,
@@ -195,12 +575,42 @@
     },
     {
       "t": 24,
-      "adapt": "gen 17 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 7 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "10",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 10 (2 PPO, 30 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 17,
+          "gen": 32,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 25,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "10",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 10 (2 PPO, 30 imitation) · completion - · best lap -"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 32,
           "best": null,
           "mean": null,
           "done": null,
@@ -211,12 +621,71 @@
     },
     {
       "t": 26,
-      "adapt": "gen 18 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 8 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "11",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 11 (3 PPO, 33 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
-          "gen": 18,
+          "gen": 33,
+          "best": 13.72,
+          "mean": 13.74,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 27,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "11",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 11 (3 PPO, 33 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 33,
+          "best": 13.72,
+          "mean": 13.74,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 28,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "12",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 12 (4 PPO, 36 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 34,
           "best": null,
           "mean": null,
           "done": null,
@@ -226,13 +695,22 @@
       ]
     },
     {
-      "t": 28,
-      "adapt": "gen 19 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 9 updates since swap",
-      "track": "user-944e1d27",
+      "t": 29,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "12",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 12 (4 PPO, 36 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
-          "gen": 19,
+          "gen": 34,
           "best": null,
           "mean": null,
           "done": null,
@@ -243,345 +721,18 @@
     },
     {
       "t": 30,
-      "adapt": "gen 19 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 9 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 20,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 32,
-      "adapt": "gen 20 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 10 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 20,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 34,
-      "adapt": "gen 21 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 11 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 21,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 36,
-      "adapt": "gen 22 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 12 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 22,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 38,
-      "adapt": "gen 22 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 12 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 22,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 40,
-      "adapt": "gen 23 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 13 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 23,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 42,
-      "adapt": "gen 24 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now n/a · best n/a · procedural 100% → n/a · 14 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 24,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 44,
-      "adapt": "gen 25 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 15 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 25,
-          "best": 7.82,
-          "mean": 7.82,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.7
-        }
-      ]
-    },
-    {
-      "t": 47,
-      "adapt": "gen 25 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 15 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 25,
-          "best": 7.82,
-          "mean": 7.82,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.7
-        }
-      ]
-    },
-    {
-      "t": 49,
-      "adapt": "gen 26 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 16 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 26,
-          "best": 7.88,
-          "mean": 8.14,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.9
-        }
-      ]
-    },
-    {
-      "t": 51,
-      "adapt": "gen 27 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 17 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 27,
-          "best": 8.16,
-          "mean": 8.43,
-          "done": 1,
-          "crash": 0,
-          "vmax": 9
-        }
-      ]
-    },
-    {
-      "t": 52,
-      "adapt": "gen 27 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 18 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 28,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 55,
-      "adapt": "gen 28 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 18 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 28,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 57,
-      "adapt": "gen 29 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 19 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 29,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 59,
-      "adapt": "gen 30 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 20 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 30,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 61,
-      "adapt": "gen 31 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 21 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 31,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 63,
-      "adapt": "gen 31 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → n/a · 21 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 31,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 65,
-      "adapt": "gen 32 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 22 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 32,
-          "best": 7.2,
-          "mean": 7.2,
-          "done": 1,
-          "crash": 0,
-          "vmax": 6.9
-        }
-      ]
-    },
-    {
-      "t": 67,
-      "adapt": "gen 33 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 23 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 33,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 69,
-      "adapt": "gen 33 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 23 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 34,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 71,
-      "adapt": "gen 34 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 24 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 34,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 73,
-      "adapt": "gen 35 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 25 updates since swap",
-      "track": "user-944e1d27",
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "13",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 13 (5 PPO, 39 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
           "gen": 35,
@@ -594,13 +745,22 @@
       ]
     },
     {
-      "t": 75,
-      "adapt": "gen 36 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 26 updates since swap",
-      "track": "user-944e1d27",
+      "t": 31,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "13",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 13 (5 PPO, 39 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
-          "gen": 36,
+          "gen": 35,
           "best": null,
           "mean": null,
           "done": null,
@@ -610,26 +770,69 @@
       ]
     },
     {
-      "t": 77,
-      "adapt": "gen 36 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 26 updates since swap",
-      "track": "user-944e1d27",
+      "t": 32,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "14",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 14 (6 PPO, 42 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 36,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "best": 13.94,
+          "mean": 13.94,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
         }
       ]
     },
     {
-      "t": 79,
-      "adapt": "gen 37 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 27 updates since swap",
-      "track": "user-944e1d27",
+      "t": 33,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "14",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 14 (6 PPO, 42 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 36,
+          "best": 13.94,
+          "mean": 13.94,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 34,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "15",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 15 (7 PPO, 45 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 37,
@@ -642,10 +845,44 @@
       ]
     },
     {
-      "t": 81,
-      "adapt": "gen 38 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 28 updates since swap",
-      "track": "user-944e1d27",
+      "t": 35,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "15",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 15 (7 PPO, 45 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 37,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 36,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "16",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 16 (8 PPO, 48 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 38,
@@ -658,13 +895,22 @@
       ]
     },
     {
-      "t": 83,
-      "adapt": "gen 39 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 29 updates since swap",
-      "track": "user-944e1d27",
+      "t": 37,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "16",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 16 (8 PPO, 48 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 39,
+          "gen": 38,
           "best": null,
           "mean": null,
           "done": null,
@@ -674,90 +920,194 @@
       ]
     },
     {
-      "t": 85,
-      "adapt": "gen 39 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 29 updates since swap",
-      "track": "user-944e1d27",
+      "t": 38,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "17",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 17 (9 PPO, 51 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 39,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "best": 13.96,
+          "mean": 13.96,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.4
         }
       ]
     },
     {
-      "t": 87,
-      "adapt": "gen 40 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 30 updates since swap",
-      "track": "user-944e1d27",
+      "t": 39,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "17",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 17 (9 PPO, 51 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 39,
+          "best": 13.96,
+          "mean": 13.96,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.4
+        }
+      ]
+    },
+    {
+      "t": 39,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "18",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 18 (10 PPO, 54 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 40,
-          "best": 7.84,
-          "mean": 7.84,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.7
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 89,
-      "adapt": "gen 41 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 31 updates since swap",
-      "track": "user-944e1d27",
+      "t": 40,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "18",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 18 (10 PPO, 54 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 40,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 41,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "19",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 19 (11 PPO, 57 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 41,
-          "best": 7.8,
-          "mean": 8.13,
+          "best": 13.8,
+          "mean": 13.83,
           "done": 1,
           "crash": 0,
-          "vmax": 9
+          "vmax": 5.4
         }
       ]
     },
     {
-      "t": 91,
-      "adapt": "gen 41 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 31 updates since swap",
-      "track": "user-944e1d27",
+      "t": 42,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "20",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 20 (12 PPO, 60 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-4-s0",
       "board": [
         {
           "gen": 42,
-          "best": 7.92,
-          "mean": 8.07,
+          "best": 13.88,
+          "mean": 13.88,
           "done": 1,
           "crash": 0,
-          "vmax": 8.7
+          "vmax": 5.1
         }
       ]
     },
     {
-      "t": 93,
-      "adapt": "gen 42 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 32 updates since swap",
-      "track": "user-944e1d27",
+      "t": 43,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "20",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 20 (12 PPO, 60 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-4-s0",
       "board": [
         {
           "gen": 42,
-          "best": 7.92,
-          "mean": 8.07,
+          "best": 13.88,
+          "mean": 13.88,
           "done": 1,
           "crash": 0,
-          "vmax": 8.7
+          "vmax": 5.1
         }
       ]
     },
     {
-      "t": 95,
-      "adapt": "gen 43 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 33 updates since swap",
-      "track": "user-944e1d27",
+      "t": 44,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "21",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 21 (13 PPO, 63 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-4-s0",
       "board": [
         {
           "gen": 43,
@@ -770,10 +1120,44 @@
       ]
     },
     {
-      "t": 97,
-      "adapt": "gen 44 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 34 updates since swap",
-      "track": "user-944e1d27",
+      "t": 45,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "21",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 21 (13 PPO, 63 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-4-s0",
+      "board": [
+        {
+          "gen": 43,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 46,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "22",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 22 (14 PPO, 66 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-4-s0",
       "board": [
         {
           "gen": 44,
@@ -786,10 +1170,44 @@
       ]
     },
     {
-      "t": 99,
-      "adapt": "gen 44 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 34 updates since swap",
-      "track": "user-944e1d27",
+      "t": 47,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "22",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 22 (14 PPO, 66 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-4-s0",
+      "board": [
+        {
+          "gen": 44,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 48,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "23",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 23 (15 PPO, 69 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 45,
@@ -802,10 +1220,19 @@
       ]
     },
     {
-      "t": 101,
-      "adapt": "gen 45 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 35 updates since swap",
-      "track": "user-944e1d27",
+      "t": 49,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "23",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 23 (15 PPO, 69 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 45,
@@ -818,26 +1245,44 @@
       ]
     },
     {
-      "t": 103,
-      "adapt": "gen 46 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 36 updates since swap",
-      "track": "user-944e1d27",
+      "t": 50,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "24",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 24 (16 PPO, 72 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 46,
-          "best": 7.98,
-          "mean": 7.98,
+          "best": 13.8,
+          "mean": 13.8,
           "done": 1,
           "crash": 0,
-          "vmax": 8.7
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 105,
-      "adapt": "gen 47 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 37 updates since swap",
-      "track": "user-944e1d27",
+      "t": 51,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "25",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 25 (17 PPO, 75 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 47,
@@ -850,154 +1295,294 @@
       ]
     },
     {
-      "t": 108,
-      "adapt": "gen 47 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 38 updates since swap",
-      "track": "user-944e1d27",
+      "t": 52,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "25",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 25 (17 PPO, 75 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 48,
-          "best": 7.18,
-          "mean": 7.18,
-          "done": 1,
-          "crash": 0,
-          "vmax": 7.2
+          "gen": 47,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 110,
-      "adapt": "gen 48 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 38 updates since swap",
-      "track": "user-944e1d27",
+      "t": 53,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "26",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 26 (18 PPO, 78 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 48,
-          "best": 7.18,
-          "mean": 7.18,
-          "done": 1,
-          "crash": 0,
-          "vmax": 7.2
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 112,
-      "adapt": "gen 49 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 39 updates since swap",
-      "track": "user-944e1d27",
+      "t": 53,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "26",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 26 (18 PPO, 78 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 48,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 54,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "27",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 27 (19 PPO, 81 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 49,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "best": 8.76,
+          "mean": 8.76,
+          "done": 1,
+          "crash": 0,
+          "vmax": 4.2
         }
       ]
     },
     {
-      "t": 114,
-      "adapt": "gen 50 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 40 updates since swap",
-      "track": "user-944e1d27",
+      "t": 55,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "28",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 28 (20 PPO, 84 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 50,
-          "best": 4.96,
-          "mean": 4.98,
+          "best": 8.7,
+          "mean": 10.59,
           "done": 1,
           "crash": 0,
-          "vmax": 7.9
+          "vmax": 5.6
         }
       ]
     },
     {
-      "t": 116,
-      "adapt": "gen 50 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 40 updates since swap",
-      "track": "user-944e1d27",
+      "t": 56,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "28",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 28 (20 PPO, 84 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 50,
-          "best": 4.96,
-          "mean": 4.98,
+          "best": 8.7,
+          "mean": 10.59,
           "done": 1,
           "crash": 0,
-          "vmax": 7.9
+          "vmax": 5.6
         }
       ]
     },
     {
-      "t": 119,
-      "adapt": "gen 51 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 41 updates since swap",
-      "track": "user-944e1d27",
+      "t": 57,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "29",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 29 (21 PPO, 87 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 51,
-          "best": 4.84,
-          "mean": 5.06,
+          "best": 13.74,
+          "mean": 13.74,
           "done": 1,
           "crash": 0,
-          "vmax": 8.2
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 121,
-      "adapt": "gen 52 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 42 updates since swap",
-      "track": "user-944e1d27",
+      "t": 58,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "29",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.72",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 29 (21 PPO, 87 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 51,
+          "best": 13.74,
+          "mean": 13.74,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 59,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "30",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 30 (22 PPO, 90 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 52,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "best": 13.68,
+          "mean": 13.71,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 123,
-      "adapt": "gen 52 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 42 updates since swap",
-      "track": "user-944e1d27",
+      "t": 60,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "30",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 30 (22 PPO, 90 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 52,
+          "best": 13.68,
+          "mean": 13.71,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 61,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "31",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 31 (23 PPO, 93 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 53,
-          "best": 7.16,
-          "mean": 7.16,
+          "best": 9.12,
+          "mean": 11.47,
           "done": 1,
           "crash": 0,
-          "vmax": 7.3
+          "vmax": 5.2
         }
       ]
     },
     {
-      "t": 125,
-      "adapt": "gen 53 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 43 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 53,
-          "best": 7.16,
-          "mean": 7.16,
-          "done": 1,
-          "crash": 0,
-          "vmax": 7.3
-        }
-      ]
-    },
-    {
-      "t": 127,
-      "adapt": "gen 54 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 44 updates since swap",
-      "track": "user-944e1d27",
+      "t": 62,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "32",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 32 (24 PPO, 96 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 54,
@@ -1010,58 +1595,144 @@
       ]
     },
     {
-      "t": 129,
-      "adapt": "gen 55 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 45 updates since swap",
-      "track": "user-944e1d27",
+      "t": 63,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "32",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 32 (24 PPO, 96 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 54,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 64,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "33",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 33 (25 PPO, 99 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 55,
-          "best": 8.24,
-          "mean": 8.24,
+          "best": 13.74,
+          "mean": 13.74,
           "done": 1,
           "crash": 0,
-          "vmax": 8.5
+          "vmax": 5.6
         }
       ]
     },
     {
-      "t": 131,
-      "adapt": "gen 55 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 45 updates since swap",
-      "track": "user-944e1d27",
+      "t": 65,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "33",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 33 (25 PPO, 99 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 55,
+          "best": 13.74,
+          "mean": 13.74,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 66,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "34",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 34 (26 PPO, 102 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 56,
-          "best": 5.02,
-          "mean": 7.62,
-          "done": 1,
-          "crash": 0,
-          "vmax": 9.1
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 134,
-      "adapt": "gen 56 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 46 updates since swap",
-      "track": "user-944e1d27",
+      "t": 66,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "34",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 34 (26 PPO, 102 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 56,
-          "best": 5.02,
-          "mean": 7.62,
-          "done": 1,
-          "crash": 0,
-          "vmax": 9.1
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 136,
-      "adapt": "gen 57 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 47 updates since swap",
-      "track": "user-944e1d27",
+      "t": 67,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "35",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.68",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 35 (27 PPO, 105 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 57,
@@ -1074,61 +1745,72 @@
       ]
     },
     {
-      "t": 138,
-      "adapt": "gen 58 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 48 updates since swap",
-      "track": "user-944e1d27",
+      "t": 68,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "36",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 36 (28 PPO, 108 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 58,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "best": 13.66,
+          "mean": 13.7,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
         }
       ]
     },
     {
-      "t": 140,
-      "adapt": "gen 58 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 48 updates since swap",
-      "track": "user-944e1d27",
+      "t": 69,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "36",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 36 (28 PPO, 108 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 58,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "best": 13.66,
+          "mean": 13.7,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
         }
       ]
     },
     {
-      "t": 142,
-      "adapt": "gen 59 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 49 updates since swap",
-      "track": "user-944e1d27",
+      "t": 70,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "37",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 37 (29 PPO, 111 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 59,
-          "best": 11.06,
-          "mean": 11.06,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.5
-        }
-      ]
-    },
-    {
-      "t": 144,
-      "adapt": "gen 60 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 50 updates since swap",
-      "track": "user-944e1d27",
-      "board": [
-        {
-          "gen": 60,
           "best": null,
           "mean": null,
           "done": null,
@@ -1138,58 +1820,169 @@
       ]
     },
     {
-      "t": 146,
-      "adapt": "gen 61 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 51 updates since swap",
-      "track": "user-944e1d27",
+      "t": 71,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "37",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 37 (29 PPO, 111 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 61,
-          "best": 4.96,
-          "mean": 4.96,
-          "done": 1,
-          "crash": 0,
-          "vmax": 7.8
+          "gen": 59,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 148,
-      "adapt": "gen 61 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 51 updates since swap",
-      "track": "user-944e1d27",
+      "t": 72,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "38",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 38 (30 PPO, 114 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 61,
-          "best": 4.96,
-          "mean": 4.96,
+          "gen": 60,
+          "best": 13.88,
+          "mean": 13.88,
           "done": 1,
           "crash": 0,
-          "vmax": 7.8
+          "vmax": 4.9
         }
       ]
     },
     {
-      "t": 150,
-      "adapt": "gen 62 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 52 updates since swap",
-      "track": "user-944e1d27",
+      "t": 73,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "38",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 38 (30 PPO, 114 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 60,
+          "best": 13.88,
+          "mean": 13.88,
+          "done": 1,
+          "crash": 0,
+          "vmax": 4.9
+        }
+      ]
+    },
+    {
+      "t": 74,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "39",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 39 (31 PPO, 117 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 61,
+          "best": 13.86,
+          "mean": 13.86,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 75,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "40",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 40 (32 PPO, 120 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
           "gen": 62,
-          "best": 4.78,
-          "mean": 4.78,
+          "best": 13.9,
+          "mean": 13.91,
           "done": 1,
           "crash": 0,
-          "vmax": 7.8
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 152,
-      "adapt": "gen 63 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 53 updates since swap",
-      "track": "user-944e1d27",
+      "t": 76,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "40",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 40 (32 PPO, 120 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 62,
+          "best": 13.9,
+          "mean": 13.91,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 77,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "41",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 41 (33 PPO, 123 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
           "gen": 63,
@@ -1202,10 +1995,44 @@
       ]
     },
     {
-      "t": 155,
-      "adapt": "gen 64 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 54 updates since swap",
-      "track": "user-944e1d27",
+      "t": 78,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "41",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 41 (33 PPO, 123 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 63,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 79,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "42",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 42 (34 PPO, 126 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
           "gen": 64,
@@ -1218,10 +2045,19 @@
       ]
     },
     {
-      "t": 157,
-      "adapt": "gen 64 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 54 updates since swap",
-      "track": "user-944e1d27",
+      "t": 80,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "42",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 42 (34 PPO, 126 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
           "gen": 64,
@@ -1234,58 +2070,144 @@
       ]
     },
     {
-      "t": 159,
-      "adapt": "gen 65 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 55 updates since swap",
-      "track": "user-944e1d27",
+      "t": 81,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "43",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 43 (35 PPO, 129 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
           "gen": 65,
-          "best": 4.76,
-          "mean": 5.35,
-          "done": 1,
-          "crash": 0,
-          "vmax": 9
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 161,
-      "adapt": "gen 66 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 56 updates since swap",
-      "track": "user-944e1d27",
+      "t": 82,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "43",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 43 (35 PPO, 129 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 65,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 83,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "44",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 44 (36 PPO, 132 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
           "gen": 66,
-          "best": 7.88,
-          "mean": 7.91,
-          "done": 1,
-          "crash": 0,
-          "vmax": 9
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 163,
-      "adapt": "gen 67 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 57 updates since swap",
-      "track": "user-944e1d27",
+      "t": 84,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "45",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 45 (37 PPO, 135 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
       "board": [
         {
           "gen": 67,
-          "best": 11.08,
-          "mean": 11.08,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.3
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 165,
-      "adapt": "gen 67 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 57 updates since swap",
-      "track": "user-944e1d27",
+      "t": 84,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "45",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 45 (37 PPO, 135 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 67,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 85,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "46",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 46 (38 PPO, 138 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 68,
@@ -1298,10 +2220,19 @@
       ]
     },
     {
-      "t": 167,
-      "adapt": "gen 68 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 58 updates since swap",
-      "track": "user-944e1d27",
+      "t": 86,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "46",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 46 (38 PPO, 138 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 68,
@@ -1314,10 +2245,19 @@
       ]
     },
     {
-      "t": 170,
-      "adapt": "gen 69 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 59 updates since swap",
-      "track": "user-944e1d27",
+      "t": 87,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "47",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "13.66",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 47 (39 PPO, 141 imitation) · completion 100% · best lap 13.7 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 69,
@@ -1330,74 +2270,169 @@
       ]
     },
     {
-      "t": 172,
-      "adapt": "gen 70 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 60 updates since swap",
-      "track": "gen-1-s0",
+      "t": 88,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "48",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 48 (40 PPO, 144 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 70,
-          "best": 4.94,
-          "mean": 6.44,
+          "best": 12.34,
+          "mean": 13.09,
           "done": 1,
           "crash": 0,
-          "vmax": 8.7
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 174,
-      "adapt": "gen 70 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 60 updates since swap",
-      "track": "gen-1-s0",
+      "t": 89,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "48",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 48 (40 PPO, 144 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 70,
+          "best": 12.34,
+          "mean": 13.09,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 90,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "49",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 49 (41 PPO, 147 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 71,
-          "best": 7.92,
-          "mean": 8.03,
+          "best": 12.4,
+          "mean": 12.4,
           "done": 1,
           "crash": 0,
-          "vmax": 8.9
+          "vmax": 5.4
         }
       ]
     },
     {
-      "t": 176,
-      "adapt": "gen 71 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 61 updates since swap",
-      "track": "gen-1-s0",
+      "t": 91,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "49",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 49 (41 PPO, 147 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 71,
-          "best": 7.92,
-          "mean": 8.03,
+          "best": 12.4,
+          "mean": 12.4,
           "done": 1,
           "crash": 0,
-          "vmax": 8.9
+          "vmax": 5.4
         }
       ]
     },
     {
-      "t": 178,
-      "adapt": "gen 72 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 62 updates since swap",
-      "track": "gen-1-s0",
+      "t": 92,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "50",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 50 (42 PPO, 150 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 72,
-          "best": 5.04,
-          "mean": 6.78,
-          "done": 1,
-          "crash": 0,
-          "vmax": 7.8
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 180,
-      "adapt": "gen 72 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 63 updates since swap",
-      "track": "gen-1-s0",
+      "t": 93,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "50",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 50 (42 PPO, 150 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 72,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 94,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "51",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 51 (43 PPO, 153 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 73,
@@ -1410,58 +2445,119 @@
       ]
     },
     {
-      "t": 182,
-      "adapt": "gen 73 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 63 updates since swap",
-      "track": "gen-1-s0",
-      "board": [
-        {
-          "gen": 73,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 184,
-      "adapt": "gen 74 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 64 updates since swap",
-      "track": "gen-1-s0",
+      "t": 95,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "52",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 52 (44 PPO, 156 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 74,
-          "best": 11,
-          "mean": 11,
+          "best": 8.06,
+          "mean": 8.06,
           "done": 1,
           "crash": 0,
-          "vmax": 8.6
+          "vmax": 5.3
         }
       ]
     },
     {
-      "t": 186,
-      "adapt": "gen 75 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 65 updates since swap",
-      "track": "gen-1-s0",
+      "t": 96,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "52",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 52 (44 PPO, 156 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 74,
+          "best": 8.06,
+          "mean": 8.06,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.3
+        }
+      ]
+    },
+    {
+      "t": 97,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "53",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 53 (45 PPO, 159 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 75,
-          "best": 4.98,
-          "mean": 4.98,
-          "done": 1,
-          "crash": 0,
-          "vmax": 7.8
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 188,
-      "adapt": "gen 75 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 65 updates since swap",
-      "track": "gen-1-s0",
+      "t": 98,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "53",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 53 (45 PPO, 159 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 75,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 98,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "54",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 54 (46 PPO, 162 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 76,
@@ -1474,10 +2570,19 @@
       ]
     },
     {
-      "t": 190,
-      "adapt": "gen 76 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 66 updates since swap",
-      "track": "gen-1-s0",
+      "t": 99,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "54",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 54 (46 PPO, 162 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 76,
@@ -1490,10 +2595,19 @@
       ]
     },
     {
-      "t": 192,
-      "adapt": "gen 77 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 67 updates since swap",
-      "track": "gen-1-s0",
+      "t": 100,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "55",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 55 (47 PPO, 165 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 77,
@@ -1506,10 +2620,44 @@
       ]
     },
     {
-      "t": 194,
-      "adapt": "gen 78 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 68 updates since swap",
-      "track": "gen-1-s0",
+      "t": 101,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "55",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 55 (47 PPO, 165 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 77,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 102,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "56",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 56 (48 PPO, 168 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
           "gen": 78,
@@ -1522,58 +2670,119 @@
       ]
     },
     {
-      "t": 196,
-      "adapt": "gen 78 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 68 updates since swap",
-      "track": "gen-1-s0",
+      "t": 103,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "56",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.34",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 56 (48 PPO, 168 imitation) · completion 100% · best lap 12.3 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
-          "gen": 79,
-          "best": 4.72,
-          "mean": 4.72,
-          "done": 1,
-          "crash": 0,
-          "vmax": 7.9
+          "gen": 78,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 198,
-      "adapt": "gen 79 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 69 updates since swap",
-      "track": "gen-2-s0",
+      "t": 104,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "57",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 57 (49 PPO, 171 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
           "gen": 79,
-          "best": 4.72,
-          "mean": 4.72,
+          "best": 12.1,
+          "mean": 12.16,
           "done": 1,
           "crash": 0,
-          "vmax": 7.9
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 200,
-      "adapt": "gen 80 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 70 updates since swap",
-      "track": "gen-2-s0",
+      "t": 105,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "58",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 58 (50 PPO, 174 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
           "gen": 80,
-          "best": 5,
-          "mean": 7.44,
-          "done": 1,
-          "crash": 0,
-          "vmax": 9
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 202,
-      "adapt": "gen 81 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 71 updates since swap",
-      "track": "gen-2-s0",
+      "t": 106,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "58",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 58 (50 PPO, 174 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
+      "board": [
+        {
+          "gen": 80,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 107,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "59",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 59 (51 PPO, 177 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
           "gen": 81,
@@ -1586,10 +2795,19 @@
       ]
     },
     {
-      "t": 204,
-      "adapt": "gen 81 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 71 updates since swap",
-      "track": "gen-2-s0",
+      "t": 108,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "59",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 59 (51 PPO, 177 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
           "gen": 81,
@@ -1602,58 +2820,144 @@
       ]
     },
     {
-      "t": 206,
-      "adapt": "gen 82 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 72 updates since swap",
-      "track": "gen-2-s0",
+      "t": 109,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "60",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 60 (52 PPO, 180 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
           "gen": 82,
-          "best": 8.4,
-          "mean": 8.4,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.7
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 209,
-      "adapt": "gen 83 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 73 updates since swap",
-      "track": "gen-2-s0",
+      "t": 110,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "60",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 60 (52 PPO, 180 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
+      "board": [
+        {
+          "gen": 82,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 111,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "61",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 61 (53 PPO, 183 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
           "gen": 83,
-          "best": 8.44,
-          "mean": 8.44,
+          "best": 13.78,
+          "mean": 13.78,
           "done": 1,
           "crash": 0,
-          "vmax": 8.5
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 211,
-      "adapt": "gen 84 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 74 updates since swap",
-      "track": "gen-2-s0",
+      "t": 112,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "62",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 62 (54 PPO, 186 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
       "board": [
         {
           "gen": 84,
-          "best": 5.06,
-          "mean": 5.06,
-          "done": 1,
-          "crash": 0,
-          "vmax": 7.8
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 213,
-      "adapt": "gen 84 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 74 updates since swap",
-      "track": "gen-2-s0",
+      "t": 113,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "62",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 62 (54 PPO, 186 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-3-s0",
+      "board": [
+        {
+          "gen": 84,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 114,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "63",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 63 (55 PPO, 189 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 85,
@@ -1666,10 +2970,19 @@
       ]
     },
     {
-      "t": 215,
-      "adapt": "gen 85 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 75 updates since swap",
-      "track": "gen-2-s0",
+      "t": 115,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "63",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 63 (55 PPO, 189 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 85,
@@ -1682,42 +2995,119 @@
       ]
     },
     {
-      "t": 217,
-      "adapt": "gen 86 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 76 updates since swap",
-      "track": "gen-2-s0",
+      "t": 115,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "64",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 64 (56 PPO, 192 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 86,
-          "best": 7.9,
-          "mean": 8.01,
+          "best": 12.22,
+          "mean": 12.22,
           "done": 1,
           "crash": 0,
-          "vmax": 8.8
+          "vmax": 5.6
         }
       ]
     },
     {
-      "t": 219,
-      "adapt": "gen 87 completion 100%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 77 updates since swap",
-      "track": "gen-2-s0",
+      "t": 116,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "64",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 64 (56 PPO, 192 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 86,
+          "best": 12.22,
+          "mean": 12.22,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 117,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "65",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 65 (57 PPO, 195 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 87,
-          "best": 8.04,
-          "mean": 8.04,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.8
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 221,
-      "adapt": "gen 88 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 78 updates since swap",
-      "track": "gen-2-s0",
+      "t": 118,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "65",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 65 (57 PPO, 195 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 87,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 119,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "66",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 66 (58 PPO, 198 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 88,
@@ -1730,90 +3120,169 @@
       ]
     },
     {
-      "t": 223,
-      "adapt": "gen 88 completion 0%",
-      "text": "drawn track: first 64 eps n/a · now 100% · best 7.8 s · procedural 100% → 100% · 78 updates since swap",
-      "track": "gen-2-s0",
-      "board": [
-        {
-          "gen": 88,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
-        }
-      ]
-    },
-    {
-      "t": 225,
-      "adapt": "gen 89 completion 100%",
-      "text": "drawn track: first 64 eps 100% · now 100% · best 7.8 s · procedural 100% → 100% · 79 updates since swap",
-      "track": "user-944e1d27",
+      "t": 120,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "67",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 67 (59 PPO, 201 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 89,
-          "best": 8.1,
-          "mean": 8.1,
+          "best": 7.6,
+          "mean": 10.64,
           "done": 1,
           "crash": 0,
-          "vmax": 8.3
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 227,
-      "adapt": "gen 90 completion 100%",
-      "text": "drawn track: first 64 eps 100% · now 100% · best 7.8 s · procedural 100% → 100% · 80 updates since swap",
-      "track": "user-944e1d27",
+      "t": 121,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "67",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 67 (59 PPO, 201 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 89,
+          "best": 7.6,
+          "mean": 10.64,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 122,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "68",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 68 (60 PPO, 204 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 90,
-          "best": 5.06,
-          "mean": 5.06,
+          "best": 12.16,
+          "mean": 12.16,
           "done": 1,
           "crash": 0,
-          "vmax": 7.8
+          "vmax": 5.5
         }
       ]
     },
     {
-      "t": 229,
-      "adapt": "gen 91 completion 0%",
-      "text": "drawn track: first 64 eps 100% · now 100% · best 7.8 s · procedural 100% → 100% · 81 updates since swap",
-      "track": "user-944e1d27",
+      "t": 123,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "68",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 68 (60 PPO, 204 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 90,
+          "best": 12.16,
+          "mean": 12.16,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 124,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "69",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 69 (61 PPO, 207 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 91,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "best": 12.28,
+          "mean": 12.28,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.3
         }
       ]
     },
     {
-      "t": 232,
-      "adapt": "gen 91 completion 0%",
-      "text": "drawn track: first 64 eps 100% · now 100% · best 7.8 s · procedural 100% → 100% · 81 updates since swap",
-      "track": "user-944e1d27",
+      "t": 125,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "69",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 69 (61 PPO, 207 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 91,
-          "best": null,
-          "mean": null,
-          "done": null,
-          "crash": null,
-          "vmax": null
+          "best": 12.28,
+          "mean": 12.28,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.3
         }
       ]
     },
     {
-      "t": 234,
-      "adapt": "gen 92 completion 0%",
-      "text": "drawn track: first 64 eps 100% · now 100% · best 7.8 s · procedural 100% → 100% · 82 updates since swap",
-      "track": "user-944e1d27",
+      "t": 126,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "70",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 70 (62 PPO, 210 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 92,
@@ -1826,10 +3295,19 @@
       ]
     },
     {
-      "t": 235,
-      "adapt": "gen 93 completion 0%",
-      "text": "drawn track: first 64 eps 100% · now 100% · best 7.8 s · procedural 100% → 100% · 83 updates since swap",
-      "track": "user-944e1d27",
+      "t": 127,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "71",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 71 (63 PPO, 213 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 93,
@@ -1842,34 +3320,1427 @@
       ]
     },
     {
-      "t": 238,
-      "adapt": "gen 94 completion 100%",
-      "text": "drawn track: first 64 eps 100% · now 100% · best 7.8 s · procedural 100% → 100% · 84 updates since swap",
-      "track": "user-944e1d27",
+      "t": 128,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "71",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 71 (63 PPO, 213 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
-          "gen": 94,
-          "best": 5.12,
-          "mean": 6.46,
-          "done": 1,
-          "crash": 0,
-          "vmax": 8.7
+          "gen": 93,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     },
     {
-      "t": 240,
-      "adapt": "gen 94 completion 100%",
-      "text": "drawn track: first 64 eps 100% · now 100% · best 7.8 s · procedural 100% → 100% · 84 updates since swap",
-      "track": "user-944e1d27",
+      "t": 129,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "72",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 72 (64 PPO, 216 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
       "board": [
         {
           "gen": 94,
-          "best": 5.12,
-          "mean": 6.46,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 129,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "72",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 10/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 72 (64 PPO, 216 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 94,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 130,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "73",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 73 (65 PPO, 219 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 95,
+          "best": 7.92,
+          "mean": 7.92,
           "done": 1,
           "crash": 0,
-          "vmax": 8.7
+          "vmax": 5.2
+        }
+      ]
+    },
+    {
+      "t": 131,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "73",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 73 (65 PPO, 219 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 95,
+          "best": 7.92,
+          "mean": 7.92,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.2
+        }
+      ]
+    },
+    {
+      "t": 132,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "74",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 74 (66 PPO, 222 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 96,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 133,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "74",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 74 (66 PPO, 222 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 96,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 134,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "75",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 75 (67 PPO, 225 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 97,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 135,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "76",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 76 (68 PPO, 228 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 98,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 136,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "76",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 76 (68 PPO, 228 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 98,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 137,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "77",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 77 (69 PPO, 231 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 99,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 138,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "77",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 77 (69 PPO, 231 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 99,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 139,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "78",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 78 (70 PPO, 234 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 100,
+          "best": 7.98,
+          "mean": 7.98,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.3
+        }
+      ]
+    },
+    {
+      "t": 140,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "78",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 78 (70 PPO, 234 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 100,
+          "best": 7.98,
+          "mean": 7.98,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.3
+        }
+      ]
+    },
+    {
+      "t": 141,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "79",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 79 (71 PPO, 237 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 101,
+          "best": 12.34,
+          "mean": 12.34,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 142,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "79",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 79 (71 PPO, 237 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 101,
+          "best": 12.34,
+          "mean": 12.34,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 143,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "80",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 80 (72 PPO, 240 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 102,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 144,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "80",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 80 (72 PPO, 240 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 102,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 144,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "81",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 81 (73 PPO, 243 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 103,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 145,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "82",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 82 (74 PPO, 246 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 104,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 146,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "82",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 82 (74 PPO, 246 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 104,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 147,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "83",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 83 (75 PPO, 249 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 105,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 148,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "83",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 83 (75 PPO, 249 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 105,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 149,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "84",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 84 (76 PPO, 252 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 106,
+          "best": 12.2,
+          "mean": 12.2,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 150,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "84",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 84 (76 PPO, 252 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 106,
+          "best": 12.2,
+          "mean": 12.2,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 151,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "85",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 85 (77 PPO, 255 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 107,
+          "best": 12.28,
+          "mean": 12.28,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 152,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "86",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 86 (78 PPO, 258 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 108,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 153,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "86",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 16/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 86 (78 PPO, 258 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 108,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 154,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "87",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 87 (79 PPO, 261 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 109,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 155,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "87",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 87 (79 PPO, 261 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 109,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 156,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "88",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 88 (80 PPO, 264 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 110,
+          "best": 12.2,
+          "mean": 12.2,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 157,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "88",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 88 (80 PPO, 264 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 110,
+          "best": 12.2,
+          "mean": 12.2,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.5
+        }
+      ]
+    },
+    {
+      "t": 157,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "89",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 89 (81 PPO, 267 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 111,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 158,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "89",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 89 (81 PPO, 267 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 111,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 159,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "90",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 90 (82 PPO, 270 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 112,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 160,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "90",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 90 (82 PPO, 270 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 112,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 161,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "91",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 91 (83 PPO, 273 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 113,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 162,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "92",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 92 (84 PPO, 276 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 114,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 163,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "92",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 92 (84 PPO, 276 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 114,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 164,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "93",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 93 (85 PPO, 279 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 115,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 165,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "93",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 15/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 93 (85 PPO, 279 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "user-3677cdfd",
+      "board": [
+        {
+          "gen": 115,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 166,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "94",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 94 (86 PPO, 282 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 116,
+          "best": 12.16,
+          "mean": 12.19,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 167,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "94",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 94 (86 PPO, 282 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 116,
+          "best": 12.16,
+          "mean": 12.19,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 168,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "95",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 95 (87 PPO, 285 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 117,
+          "best": 12.16,
+          "mean": 12.16,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.4
+        }
+      ]
+    },
+    {
+      "t": 169,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "96",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 96 (88 PPO, 288 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 118,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 170,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "96",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 96 (88 PPO, 288 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 118,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 171,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "97",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 97 (89 PPO, 291 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 119,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 171,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "97",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 97 (89 PPO, 291 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 119,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 172,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "98",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 98 (90 PPO, 294 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 120,
+          "best": 12.14,
+          "mean": 12.15,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 173,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "98",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 12/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 98 (90 PPO, 294 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 120,
+          "best": 12.14,
+          "mean": 12.15,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 174,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "99",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 11/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 99 (91 PPO, 297 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 121,
+          "best": 12.1,
+          "mean": 12.1,
+          "done": 1,
+          "crash": 0,
+          "vmax": 5.6
+        }
+      ]
+    },
+    {
+      "t": 175,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "100",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 100 (92 PPO, 300 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 122,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 176,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "100",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 13/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 100 (92 PPO, 300 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 122,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 177,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "101",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 101 (93 PPO, 303 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 123,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 178,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "101",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 101 (93 PPO, 303 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 123,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 179,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "102",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 102 (94 PPO, 306 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 124,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
+        }
+      ]
+    },
+    {
+      "t": 180,
+      "panel": {
+        "phase": "tune",
+        "track": "user-3677cdfd",
+        "steps": "102",
+        "latencyMs": "1608",
+        "zeroShot": "1.000",
+        "unchanged": "true",
+        "completion": "1.000",
+        "bestLap": "12.10",
+        "text": "fine-tuning: 14/16 envs on the new track | swap latency 1.6 s, weights unchanged | zero-shot 100% of 64 episodes | steps 102 (94 PPO, 306 imitation) · completion 100% · best lap 12.1 s"
+      },
+      "track": "gen-2-s0",
+      "board": [
+        {
+          "gen": 124,
+          "best": null,
+          "mean": null,
+          "done": null,
+          "crash": null,
+          "vmax": null
         }
       ]
     }
