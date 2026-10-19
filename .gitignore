@@ -1,0 +1,11 @@
+node_modules
+dist
+test-results
+playwright-report
+.DS_Store
+*.local
+.vite
+coverage
+*.tsbuildinfo
+eval-report.json
+.media-frames
