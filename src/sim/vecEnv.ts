@@ -6,7 +6,7 @@ import { newBaselineMemory, purePursuit, type BaselineController, type BaselineM
 import { Vehicle } from './car/vehicle';
 import { defaultCarParams } from './car/params';
 import { RayField, fillObservation, wheelsOff } from './sensors';
-import { EpisodeBook, scoreStep } from './reward';
+import { EpisodeBook, MAX_DS as MAX_PLAUSIBLE_DS, scoreStep } from './reward';
 import { getWallGrid, resolveWallContact, type WallGrid, type WallResult } from './wallGrid';
 
 interface Slot {
@@ -20,6 +20,10 @@ interface Slot {
   prevS: number;
   lap: number;
   lapTime: number;
+  /** Time of the last completed lap this episode. */
+  lastLapTime: number;
+  /** Forward arc length since the last start-line crossing. A lap needs ~a full circuit of it. */
+  lapProgress: number;
   stepInLap: number;
   rng: RNG;
   delay: number[];
@@ -33,6 +37,18 @@ interface Slot {
 function yawOf(tx: number, tz: number): number {
   return Math.atan2(tz, tx);
 }
+
+/** Step cap for an episode. The `time_left` observation counts down the same budget. */
+export function stepCapFor(trackLength: number, lapsTarget: number): number {
+  return Math.max(200, Math.round(((trackLength / 1.5) * lapsTarget * 1.8) / CONTROL_DT));
+}
+
+/** Roll angle (rad) that ends an episode as a flip. The vehicle model clamps roll to +/-0.9 rad, so SPEC's 80 degrees is unreachable. */
+const FLIP_ROLL = 0.85;
+
+/** Fresh track and episode config for a slot that just ended an episode. */
+/** Track and config for a slot's next episode; null keeps the slot's current track and car. */
+export type EpisodeSampler = (slot: number) => { track: TrackSpec; cfg: EpisodeConfig } | null;
 
 export interface CarSnap {
   x: number;
@@ -65,8 +81,10 @@ export class VecEnv {
   readonly infos: StepInfo[];
   private slots: Slot[] = [];
   private readonly wallOut: WallResult = { contact: false, hit: false, impact: 0 };
+  /** When set, every slot draws a new track and car config at each episode end (per-episode DR and track mixing). */
+  sampler: EpisodeSampler | null = null;
   /** Episodes finished since the last consume. */
-  readonly finished: { lap: boolean; lapTime?: number; crash: boolean; ret: number; trackId: string; speed: number }[] = [];
+  readonly finished: { lap: boolean; lapTime?: number; crash: boolean; ret: number; trackId: string; tRef: number; speed: number }[] = [];
 
   constructor(n: number) {
     this.n = n;
@@ -111,6 +129,8 @@ export class VecEnv {
         prevS: 0,
         lap: 0,
         lapTime: 0,
+        lastLapTime: 0,
+        lapProgress: 0,
         stepInLap: 0,
         rng: makeRng(cfg.seed ?? i + 1, `env/${i}/${track.id}`),
         delay: [],
@@ -136,6 +156,8 @@ export class VecEnv {
     slot.prevS = s0.s;
     slot.lap = 0;
     slot.lapTime = 0;
+    slot.lastLapTime = 0;
+    slot.lapProgress = s0.s;
     slot.stepInLap = 0;
     slot.contact = false;
     slot.returning = 0;
@@ -166,16 +188,26 @@ export class VecEnv {
       const q = nearestSample(slot.track, slot.car.px, slot.car.pz, slot.hint);
       slot.hint = q.index;
       let ds = q.sample.s - slot.prevS;
-      let lapDone = false;
-      if (ds < -slot.track.length * 0.5) {
+      const half = slot.track.length * 0.5;
+      let crossedForward = false;
+      if (ds < -half) {
         ds += slot.track.length;
-        lapDone = true;
+        crossedForward = true;
+      } else if (ds > half) {
+        // Backwards across the start line.
+        ds -= slot.track.length;
+      }
+      if (ds < 0) ds = Math.max(ds, -0.05);
+      if (ds < MAX_PLAUSIBLE_DS) slot.lapProgress += ds;
+      // Crossing the line only counts after a near-complete circuit, so reversing over it and
+      // driving forward again cannot score a lap.
+      const lapDone = crossedForward && slot.lapProgress >= 0.9 * slot.track.length;
+      if (crossedForward) slot.lapProgress = 0;
+      slot.lapTime += CONTROL_DT;
+      if (lapDone) {
         slot.lap++;
         slot.car.lap = slot.lap;
-      } else if (ds < 0) {
-        ds = Math.max(ds, -0.05);
       }
-      slot.lapTime += CONTROL_DT;
       slot.car.s = q.sample.s;
       slot.car.lapTime = slot.lapTime;
       const off = wheelsOff(slot.track, slot.car, slot.hint) >= 2;
@@ -185,7 +217,7 @@ export class VecEnv {
       const wrong = align < -0.5;
       const wall = this.wallPush(slot);
       const lapsTarget = slot.cfg.lapsTarget ?? (slot.cfg.stage <= 1 ? 1 : 2);
-      const stepCap = Math.max(200, Math.round((slot.track.length / 1.5) * lapsTarget * 1.8 / CONTROL_DT));
+      const stepCap = stepCapFor(slot.track.length, lapsTarget);
       const scored = scoreStep(
         {
           ds,
@@ -209,7 +241,7 @@ export class VecEnv {
         lapsTarget,
         slot.lap,
       );
-      if (Math.abs(slot.car.roll) > (80 * Math.PI) / 180) scored.done = true;
+      if (Math.abs(slot.car.roll) > FLIP_ROLL) scored.done = true;
       slot.prevS = q.sample.s;
       slot.returning += scored.reward;
       this.rew[i] = scored.reward;
@@ -219,6 +251,7 @@ export class VecEnv {
       info.progress = q.sample.s;
       info.lapDone = lapDone;
       info.lapTime = lapDone ? slot.lapTime : undefined;
+      if (lapDone) slot.lastLapTime = slot.lapTime;
       info.offTrack = off;
       info.wallHit = wall.hit || slot.contact;
       info.speed = slot.car.speed();
@@ -230,19 +263,37 @@ export class VecEnv {
       if (scored.done || scored.truncated) {
         this.finished.push({
           lap: slot.lap >= 1,
-          lapTime: slot.lap >= 1 ? slot.lapTime : undefined,
-          crash: slot.book.crashed || off,
+          lapTime: slot.lap >= 1 ? slot.lastLapTime : undefined,
+          // A lap that touched a wall is still a completed lap; a crash is an episode that ended without one.
+          crash: slot.lap < 1 && (slot.book.crashed || off),
           ret: slot.returning,
           trackId: slot.track.id,
+          tRef: slot.track.tRef,
           speed: info.speed,
         });
-        if (lapDone) slot.lapTime = 0;
-        this.place(slot);
+        this.startNext(i, slot);
+      } else if (lapDone) {
+        slot.lastLapTime = slot.lapTime;
+        slot.lapTime = 0;
       }
       this.writeObs(i);
       void st;
     }
     return { obs: this.obs, rew: this.rew, done: this.done, trunc: this.trunc, infos: this.infos };
+  }
+
+  private startNext(i: number, slot: Slot): void {
+    const next = this.sampler?.(i);
+    if (next) {
+      if (next.track !== slot.track) {
+        slot.track = next.track;
+        slot.rays.setTrack(next.track);
+        slot.grid = getWallGrid(next.track.walls);
+      }
+      slot.cfg = next.cfg;
+      slot.car = new Vehicle(next.cfg.car);
+    }
+    this.place(slot);
   }
 
   /** Cheap polyline resolution. Same wall geometry Rapier uses for the driven car. */
@@ -254,7 +305,7 @@ export class VecEnv {
 
   private writeObs(i: number): void {
     const slot = this.slots[i]!;
-    const cap = Math.max(200, Math.round(slot.track.length / 1.5 / CONTROL_DT));
+    const cap = stepCapFor(slot.track.length, slot.cfg.lapsTarget ?? (slot.cfg.stage <= 1 ? 1 : 2));
     const timeLeft = Math.max(0, 1 - slot.book.steps / cap);
     slot.hint = fillObservation(
       this.obs,

@@ -34,6 +34,6 @@ for (const stage of [0, 1, 2, 3, 4]) {
       }
     }
   }
-  SENSOR_FLAGS.nearestRay = false;
+  SENSOR_FLAGS.nearestRay = true;
   console.log(`stage ${stage}: ${((wrong / rays) * 100).toFixed(1)}% of rays differ, mean |error| when wrong ${(sumErr / Math.max(1, wrong)).toFixed(2)} (fraction of 6 m)`);
 }

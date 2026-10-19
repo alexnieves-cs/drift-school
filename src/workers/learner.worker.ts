@@ -1,9 +1,9 @@
 import type { Trainer } from '../rl/trainer';
 import { BROWSER_TUNE, configureFinetune, trainRecipe } from '../rl/recipe';
 import { generateTrack } from '../track/generate';
-import { buildTrackFromPoints } from '../track/build';
+import { buildTrackFromPoints, validateTrack } from '../track/build';
 import { handlePing } from '../shared/messages';
-import { forkCheckpoint, saveCheckpoint } from '../rl/checkpoint';
+import { forkCheckpoint, loadCheckpoint, saveCheckpoint, type Checkpoint } from '../rl/checkpoint';
 import { quantizePoints } from '../editor/share';
 import { FineTune, type FineTuneReport } from '../rl/finetune';
 import type { TrackSpec } from '../shared/types';
@@ -27,6 +27,26 @@ let lastUserSave = 0;
 
 function post(data: unknown): void {
   scope.postMessage(data);
+}
+
+/** Messages that arrive while the learner is still starting are applied once it is ready. */
+const queued: Record<string, unknown>[] = [];
+const DEFERRED = new Set(['setTrackPool', 'setStage', 'setDR', 'checkpointSave', 'checkpointLoad']);
+
+function weightsOf(t: Trainer): number[][] {
+  return t.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
+}
+
+/** Checkpoint persistence is best effort: IndexedDB can be blocked (private windows), and training must not depend on it. */
+async function persist(cp: Checkpoint, forkTo?: string): Promise<boolean> {
+  try {
+    await saveCheckpoint(cp);
+    if (forkTo) await forkCheckpoint(cp.name, forkTo);
+    return true;
+  } catch {
+    post({ type: 'status', text: 'checkpoint storage unavailable' });
+    return false;
+  }
 }
 
 /** SPEC: the ghost stream is 30 Hz. The main thread acks every frame it draws; a main thread that
@@ -69,7 +89,7 @@ async function maybeSaveUser(rep: FineTuneReport): Promise<void> {
   if (now - lastUserSave < 5000) return;
   lastUserSave = now;
   const weights = trainer.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
-  await saveCheckpoint({ name: fine.user.id, gen: trainer.gen, stage: trainer.curriculum.stage, weights });
+  await persist({ name: fine.user.id, gen: trainer.gen, stage: trainer.curriculum.stage, weights });
 }
 
 async function loop(): Promise<void> {
@@ -121,7 +141,7 @@ async function announceSwap(trackId: string, hashBefore: string): Promise<void> 
 
 async function handle(msg: Record<string, unknown>): Promise<void> {
   if (msg.type === 'init') {
-    const n = Number(msg.n ?? 8);
+    const n = Math.max(1, Math.min(64, Math.floor(Number(msg.n ?? 8)) || 8));
     const stage = Number(msg.stage ?? 0);
     const seeds = (msg.seeds as number[]) ?? [1, 2, 3, 4];
     procedural = seeds.map((seed) => generateTrack({ seed, stage }));
@@ -141,26 +161,29 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
     // Live view: short rollouts, and cars keep their episodes between updates.
     trainer.horizon = 32;
     trainer.freshEpisodesPerUpdate = false;
-    const weights = trainer.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
-    await saveCheckpoint({ name: 'base', gen: trainer.gen, stage: trainer.curriculum.stage, weights });
+    await persist({ name: 'base', gen: trainer.gen, stage: trainer.curriculum.stage, weights: weightsOf(trainer) });
     post({ type: 'ready', hash: trainer.weightHash(), trackId: trainer.env.trackId(0) });
     post({ type: 'status', text: 'racing' });
     paused = false;
     publish();
     void loop();
+    while (queued.length) await handle(queued.shift()!);
     return;
   }
   if (msg.type === 'ghostAck') {
     unacked = Math.max(0, unacked - 1);
     return;
   }
-  if (!trainer) return;
+  if (!trainer) {
+    if (DEFERRED.has(String(msg.type))) queued.push(msg);
+    return;
+  }
   if (msg.type === 'pause') {
     paused = Boolean(msg.paused);
     if (!paused) void loop();
   }
   if (msg.type === 'baseline') baseline = Boolean(msg.on);
-  if (msg.type === 'setStage') trainer.curriculum.stage = Number(msg.stage ?? 0);
+  if (msg.type === 'setStage') trainer.setStage(Number(msg.stage ?? 0));
   if (msg.type === 'setDR') {
     trainer.grip = Number(msg.grip ?? 1);
     trainer.massScale = Number(msg.mass ?? 1);
@@ -176,6 +199,11 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
     const points = quantizePoints((msg.points as number[]) ?? []);
     const halfWidth = Number(msg.halfWidth ?? 1);
     const mu = Number(msg.mu ?? 1);
+    const check = validateTrack(points, halfWidth);
+    if (!check.ok) {
+      post({ type: 'error', message: `track rejected: ${[...new Set(check.issues.map((i) => i.reason))].join(', ')}` });
+      return;
+    }
     const t0 = performance.now();
     const user = buildTrackFromPoints(points, { halfWidth, mu, source: 'user' });
     fine?.stop();
@@ -194,15 +222,27 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
     baseline = false;
     void loop();
     void announceSwap(user.id, hashBefore);
-    await saveCheckpoint({ name: 'base', gen, stage, weights });
-    await forkCheckpoint('base', user.id);
+    await persist({ name: 'base', gen, stage, weights }, user.id);
     return;
   }
   if (msg.type === 'checkpointSave') {
     const name = String(msg.name ?? 'manual');
-    const weights = trainer.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
-    await saveCheckpoint({ name, gen: trainer.gen, stage: trainer.curriculum.stage, weights });
-    post({ type: 'checkpointSaved', name });
+    const ok = await persist({ name, gen: trainer.gen, stage: trainer.curriculum.stage, weights: weightsOf(trainer) });
+    post(ok ? { type: 'checkpointSaved', name } : { type: 'error', message: 'could not save checkpoint' });
+  }
+  if (msg.type === 'checkpointLoad') {
+    const name = String(msg.name ?? 'manual');
+    try {
+      const cp = await loadCheckpoint(name);
+      if (!cp) {
+        post({ type: 'status', text: `no checkpoint ${name}` });
+        return;
+      }
+      trainer.policy.setWeights(cp.weights.map((w) => Float32Array.from(w).buffer));
+      post({ type: 'status', text: `loaded ${name}` });
+    } catch (err) {
+      post({ type: 'error', message: err instanceof Error ? err.message : String(err) });
+    }
   }
 }
 
@@ -213,5 +253,7 @@ scope.onmessage = (ev: MessageEvent) => {
     post(pong);
     return;
   }
-  void handle(msg);
+  handle(msg).catch((err: unknown) => {
+    post({ type: 'error', message: err instanceof Error ? err.message : String(err) });
+  });
 };

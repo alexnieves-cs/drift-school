@@ -6,10 +6,10 @@ import { chromium } from '@playwright/test';
  * Chromium binary to drive. The playwright version pinned in package.json may want a browser
  * revision the machine does not have (browsers come from PLAYWRIGHT_BROWSERS_PATH and are never
  * downloaded here), so fall back to the highest revision that is actually installed.
- * Override with DRIFT_CHROMIUM=/path/to/chrome.
+ * Override with DRIFT_CHROMIUM or PW_CHROMIUM_PATH=/path/to/chrome.
  */
 export function findChromium(): string | null {
-  const env = process.env.DRIFT_CHROMIUM;
+  const env = process.env.DRIFT_CHROMIUM || process.env.PW_CHROMIUM_PATH;
   if (env && existsSync(env)) return env;
   try {
     const p = chromium.executablePath();

@@ -1,9 +1,10 @@
 import { ACT_DIM, OBS_DIM, type EpisodeConfig, type GenStat, type TrackSpec } from '../shared/types';
 import { hashBuffers } from '../shared/hash';
-import { makeRng } from '../shared/rng';
+import { makeRng, type RNG } from '../shared/rng';
 import { VecEnv } from '../sim/vecEnv';
 import { defaultCarParams } from '../sim/car/params';
 import { latencyFor, noiseFor, sampleCar, type DRLevel } from '../sim/dr';
+import { generateTrack } from '../track/generate';
 import { GaussianPolicy, ensureBackend } from './model';
 import { episodeConfig, type ScenarioSet } from './scenarios';
 import { Curriculum } from './curriculum';
@@ -21,6 +22,27 @@ export interface TrainerOpts {
   seed?: number;
   lr?: number;
 }
+
+/** Progress on a drawn track since the last fine-tune swap. */
+export interface AdaptStats {
+  trackId: string;
+  updatesSinceSwap: number;
+  /** Lap completion over the first 64 episodes on the new track (updates keep running meanwhile). Null until 64 have finished. */
+  first64: number | null;
+  /** Completion over the most recent episodes on the new track. */
+  completion: number | null;
+  bestLap: number | null;
+  /** Completion on procedural tracks before the swap and over the latest episodes since. */
+  procBefore: number | null;
+  procNow: number | null;
+}
+
+const FIRST_EPISODES = 64;
+const WINDOW = 64;
+const GAMMA = 0.99;
+const LAMBDA = 0.95;
+
+const mean = (xs: boolean[]): number | null => (xs.length ? xs.filter(Boolean).length / xs.length : null);
 
 export class Trainer {
   readonly env: VecEnv;
@@ -45,6 +67,14 @@ export class Trainer {
   massScale = 1;
   private obs: Float32Array;
   private ready = false;
+  /** Per-episode draws (stage replay, track, DR) when an episode ends mid-rollout. */
+  private readonly rng: RNG;
+  private episodeCount = 0;
+  /** Procedural seeds the pool was built from. Other stages regenerate from the same seeds. */
+  private seeds: number[] = [];
+  private stagePools = new Map<number, TrackSpec[]>();
+  private procWindow: boolean[] = [];
+  private adapt: { trackId: string; updates: number; first: boolean[]; recent: boolean[]; bestLap: number | null; procBefore: number | null } | null = null;
   bestLap: number | null = null;
   readonly history: GenStat[] = [];
   /** Best-lap pose tape per generation, for leaderboard replay. */
@@ -55,6 +85,7 @@ export class Trainer {
     this.env = new VecEnv(n);
     this.seed = opts.seed ?? 1;
     this.policy = new GaussianPolicy(opts.lr ?? 3e-4, this.seed);
+    this.rng = makeRng(this.seed, 'trainer');
     this.horizon = opts.horizon ?? 64;
     this.epochs = opts.epochs ?? 3;
     this.minibatch = opts.minibatch ?? 256;
@@ -64,9 +95,47 @@ export class Trainer {
 
   async init(tracks: TrackSpec[]): Promise<void> {
     await ensureBackend();
+    this.seeds = tracks.filter((t) => t.source === 'gen' && t.seed !== undefined).map((t) => t.seed!);
+    this.stagePools.clear();
+    this.stagePools.set(this.curriculum.stage, tracks);
     this.mix.setPool(tracks);
     this.resetEnvs();
+    this.env.sampler = (i) => this.sampleEpisode(i);
     this.ready = true;
+  }
+
+  /** Procedural tracks for a curriculum stage, generated once from the pool's seeds. */
+  private poolFor(stage: number): TrackSpec[] {
+    let pool = this.stagePools.get(stage);
+    if (!pool) {
+      pool = this.seeds.map((seed) => generateTrack({ seed, stage }));
+      this.stagePools.set(stage, pool);
+    }
+    return pool.length ? pool : this.mix.tracks;
+  }
+
+  /**
+   * Jump to a curriculum stage. Scenario mode reads the stage on its next draw; with a plain
+   * procedural pool (and no fine-tune running) the pool becomes that stage's tracks.
+   */
+  setStage(stage: number): void {
+    this.curriculum.stage = Math.max(0, Math.min(4, Math.round(stage)));
+    this.curriculum.resetWindow();
+    if (!this.scenarioActive && !this.mix.userId && this.seeds.length) this.mix.setPool(this.poolFor(this.curriculum.stage));
+  }
+
+  /**
+   * Next episode for a slot whose episode just ended: 20% replay of earlier stages, the
+   * fine-tune mix, fresh DR. Scenario mode keeps the slot as is until the next `resetEnvs`
+   * (the recipe redraws every slot per rollout), so the measured training recipe is unchanged.
+   */
+  private sampleEpisode(slot: number): { track: TrackSpec; cfg: EpisodeConfig } | null {
+    if (this.scenarioActive) return null;
+    const stage = this.curriculum.sampleStage(this.rng);
+    const replay = !this.mix.userId && stage !== this.curriculum.stage;
+    const pool = replay ? this.poolFor(stage) : null;
+    const track = pool ? pool[this.rng.int(pool.length)]! : this.mix.sample(this.rng);
+    return { track, cfg: this.cfg(track, slot, stage, ++this.episodeCount * 131 + slot) };
   }
 
   /**
@@ -88,24 +157,27 @@ export class Trainer {
     return !!this.scenarios && this.scenarioPool === this.mix.tracks;
   }
 
-  private cfg(track: TrackSpec, i: number): EpisodeConfig {
-    const rng = makeRng((this.gen + 1) * 10007 + i * 13 + (track.seed ?? 0) + this.seed * 7919, `dr/${track.id}`);
+  /** `salt` gives a per-episode draw; without it the draw is fixed per update and slot. */
+  private cfg(track: TrackSpec, i: number, stage = this.curriculum.stage, salt?: number): EpisodeConfig {
+    const base = salt ?? (this.gen + 1) * 10007 + i * 13;
+    const rng = makeRng(base + (track.seed ?? 0) + this.seed * 7919, `dr/${track.id}`);
     let car = sampleCar(defaultCarParams(), rng, this.dr, this.grip);
     car = { ...car, mass: car.mass * this.massScale };
     car.yawInertia *= this.massScale;
     return {
-      stage: this.curriculum.stage,
+      stage,
       car,
       noiseScale: noiseFor(rng, this.dr),
       latencyTicks: latencyFor(rng, this.dr),
       trackId: track.id,
-      lapsTarget: this.curriculum.stage <= 1 ? 1 : 2,
-      seed: (track.seed ?? 0) + i + this.gen,
+      lapsTarget: stage <= 1 ? 1 : 2,
+      seed: (track.seed ?? 0) + (salt ?? i + this.gen),
     };
   }
 
   /** Fresh episodes on every slot. Public so the recipe can draw new scenarios per rollout. */
-  resetEnvs(): void {
+  /** `all` puts every env on one track (the zero-shot start after a fine-tune swap); otherwise each draws as usual. */
+  resetEnvs(all?: TrackSpec): void {
     const tracks: TrackSpec[] = [];
     const cfgs: EpisodeConfig[] = [];
     this.resets++;
@@ -113,7 +185,10 @@ export class Trainer {
     // The TrackMix path keeps the original draw (gen + 3) so swap behaviour is unchanged.
     const rng = makeRng(scenario ? this.seed * 977 + this.gen + this.resets * 31 + 3 : this.gen + 3, 'pool');
     for (let i = 0; i < this.env.n; i++) {
-      if (scenario) {
+      if (all) {
+        tracks.push(all);
+        cfgs.push(this.cfg(all, i));
+      } else if (scenario) {
         // A DR level chosen in the UI (setDR) overrides the stage profile.
         const sc = this.scenarios!.sample(rng, Math.min(3, this.curriculum.stage), this.dr !== 'off' ? { dr: this.dr } : undefined);
         tracks.push(sc.track);
@@ -155,13 +230,33 @@ export class Trainer {
       this.mix.startFineTune(user, rest.length ? rest : tracks);
       this.policy.setLr(this.mix.lr);
     } else {
+      this.mix.userId = null;
       this.mix.setPool(tracks);
     }
     const before = this.weightHash();
-    this.resetEnvs();
+    // After a fine-tune swap every env starts on the user track; later episodes follow the 70/30 mix.
+    this.resetEnvs(this.pendingFine ? tracks[0] : undefined);
+    if (this.pendingFine) {
+      this.adapt = { trackId: tracks[0]!.id, updates: 0, first: [], recent: [], bestLap: null, procBefore: mean(this.procWindow) };
+      this.procWindow = [];
+    }
     const after = this.weightHash();
     if (before !== after) throw new Error('swap mutated weights');
     this.pendingTracks = null;
+  }
+
+  adaptStats(): AdaptStats | null {
+    const a = this.adapt;
+    if (!a) return null;
+    return {
+      trackId: a.trackId,
+      updatesSinceSwap: a.updates,
+      first64: a.first.length >= FIRST_EPISODES ? mean(a.first) : null,
+      completion: mean(a.recent),
+      bestLap: a.bestLap,
+      procBefore: a.procBefore,
+      procNow: mean(this.procWindow),
+    };
   }
 
   // --- Hot-swap support used by rl/finetune.ts (acc/swap). Additive; nothing above changed. ---
@@ -221,14 +316,19 @@ export class Trainer {
       tracks.push(track);
       cfgs.push({ ...this.cfg(track, 1000 + i), noiseScale: 0, latencyTicks: 0 });
     }
+    const sampler = this.env.sampler;
+    this.env.sampler = null;
+    const from = this.env.finished.length;
     this.env.reset(tracks, cfgs);
     const obs = new Float32Array(this.env.obs);
-    for (let t = 0; t < maxSteps && this.env.finished.length < episodes; t++) {
+    for (let t = 0; t < maxSteps && this.env.finished.length - from < episodes; t++) {
       const action = this.policy.actMean(obs, this.env.n);
       const stepped = this.env.step(action);
       obs.set(stepped.obs);
     }
-    const laps = this.env.finished.slice(0, episodes).filter((e) => e.lap).length;
+    const laps = this.env.finished.slice(from, from + episodes).filter((e) => e.lap).length;
+    this.env.sampler = sampler;
+    this.resetEnvs();
     return laps / episodes;
   }
 
@@ -243,6 +343,7 @@ export class Trainer {
     const valBuf = new Float32Array(T * n);
     const rewBuf = new Float32Array(T * n);
     const doneBuf = new Uint8Array(T * n);
+    const truncBuf = new Uint8Array(T * n);
     const t0 = performance.now();
     let steps = 0;
     const episodes: EpRecord[] = [];
@@ -264,7 +365,8 @@ export class Trainer {
         const raw = stepped.rew[i]!;
         this.rewardScale.update(raw);
         rewBuf[t * n + i] = this.rewardScale.scale(raw);
-        doneBuf[t * n + i] = stepped.done[i]! | stepped.trunc[i]!;
+        doneBuf[t * n + i] = stepped.done[i]!;
+        truncBuf[t * n + i] = stepped.trunc[i]! & (stepped.done[i]! ^ 1);
       }
       this.obs.set(stepped.obs);
       steps += n;
@@ -277,28 +379,32 @@ export class Trainer {
 
     const adv = new Float32Array(T * n);
     const ret = new Float32Array(T * n);
-    const gamma = 0.99;
-    const lam = 0.95;
-    // Bootstrap the rollout boundary with V(s_T) instead of treating it as terminal.
+    // GAE. A true termination bootstraps from 0. A time-limit cut has no terminal observation
+    // (the env already reset), so it bootstraps from its own value estimate. A rollout that ends
+    // mid-episode bootstraps from V(obs after the last step).
     const lastValue = this.policy.act(this.obs, n).value;
     for (let i = 0; i < n; i++) {
       let gae = 0;
       for (let t = T - 1; t >= 0; t--) {
         const idx = t * n + i;
-        const nextV = doneBuf[idx] ? 0 : t === T - 1 ? lastValue[i]! : valBuf[(t + 1) * n + i]!;
-        const delta = rewBuf[idx]! + gamma * nextV - valBuf[idx]!;
-        gae = delta + gamma * lam * (doneBuf[idx] ? 0 : gae);
+        const ended = doneBuf[idx]! || truncBuf[idx]!;
+        let nextV: number;
+        if (doneBuf[idx]) nextV = 0;
+        else if (truncBuf[idx]) nextV = valBuf[idx]!;
+        else nextV = t === T - 1 ? lastValue[i]! : valBuf[(t + 1) * n + i]!;
+        const delta = rewBuf[idx]! + GAMMA * nextV - valBuf[idx]!;
+        gae = delta + GAMMA * LAMBDA * (ended ? 0 : gae);
         adv[idx] = gae;
         ret[idx] = gae + valBuf[idx]!;
       }
     }
-    let mean = 0;
-    for (let i = 0; i < adv.length; i++) mean += adv[i]!;
-    mean /= adv.length;
+    let advMean = 0;
+    for (let i = 0; i < adv.length; i++) advMean += adv[i]!;
+    advMean /= adv.length;
     let varr = 0;
-    for (let i = 0; i < adv.length; i++) varr += (adv[i]! - mean) ** 2;
+    for (let i = 0; i < adv.length; i++) varr += (adv[i]! - advMean) ** 2;
     const std = Math.sqrt(varr / adv.length) + 1e-8;
-    for (let i = 0; i < adv.length; i++) adv[i] = (adv[i]! - mean) / std;
+    for (let i = 0; i < adv.length; i++) adv[i] = (adv[i]! - advMean) / std;
 
     const total = T * n;
     let kl = 0;
@@ -353,16 +459,24 @@ export class Trainer {
       }
     }
     this.mix.onUpdate();
+    if (this.adapt) this.adapt.updates++;
     for (const ep of episodes) {
-      this.curriculum.note({ completed: ep.lap, lapTime: ep.lapTime, tRef: this.mix.tracks[0]?.tRef ?? 10 });
+      if (this.adapt && ep.trackId === this.adapt.trackId) {
+        if (this.adapt.first.length < FIRST_EPISODES) this.adapt.first.push(ep.lap);
+        this.adapt.recent.push(ep.lap);
+        if (this.adapt.recent.length > WINDOW) this.adapt.recent.shift();
+        if (ep.lapTime && (this.adapt.bestLap === null || ep.lapTime < this.adapt.bestLap)) this.adapt.bestLap = ep.lapTime;
+      } else {
+        this.procWindow.push(ep.lap);
+        if (this.procWindow.length > WINDOW) this.procWindow.shift();
+      }
+      this.curriculum.note({ completed: ep.lap, lapTime: ep.lapTime, tRef: ep.tRef });
       if (ep.lapTime && (this.bestLap === null || ep.lapTime < this.bestLap)) this.bestLap = ep.lapTime;
     }
-    this.curriculum.maybePromote();
-    if (this.pendingTracks) {
-      const still = this.env.finished.length;
-      void still;
-      this.forceSwap();
+    if (this.curriculum.maybePromote() && !this.scenarioActive && !this.mix.userId && this.seeds.length) {
+      this.mix.setPool(this.poolFor(this.curriculum.stage));
     }
+    if (this.pendingTracks) this.forceSwap();
     this.replays.set(this.gen + 1, Float32Array.from(replayFrames));
     this.gen++;
     const stat = aggregateGen(this.gen, episodes, this.env.trackId(0));

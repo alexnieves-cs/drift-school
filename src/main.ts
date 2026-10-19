@@ -10,7 +10,7 @@ import { TelemetryPanel } from './ui/telemetry';
 import { Heatmap } from './ui/heatmaps';
 import { generateTrack } from './track/generate';
 import { sampleAtS } from './track/sample';
-import { buildTrackFromPoints } from './track/build';
+import { buildTrackFromPoints, validateTrack } from './track/build';
 import { encodeTrackHash, decodeTrackHash, quantizePoints } from './editor/share';
 import { toFloat } from './editor/stroke';
 import { TrackEditor, type EditorState } from './editor/editor';
@@ -23,6 +23,11 @@ import type { CarSnap } from './sim/vecEnv';
 
 const params = new URLSearchParams(location.search);
 const view = params.get('view') ?? 'race';
+/** `?cars=` as an integer in [1, 64]; anything else falls back to `fallback`. */
+function carsParam(fallback: number): number {
+  const n = Math.floor(Number(params.get('cars')));
+  return Number.isFinite(n) && n >= 1 ? Math.min(64, n) : fallback;
+}
 
 const app = document.querySelector('#app') as HTMLElement;
 app.innerHTML = `
@@ -192,7 +197,7 @@ function applyInline(msg: Record<string, unknown>): void {
   if (!inline) return;
   if (msg.type === 'pause') return;
   if (msg.type === 'baseline') inlineModeBaseline = Boolean(msg.on);
-  if (msg.type === 'setStage') inline.curriculum.stage = Number(msg.stage ?? 0);
+  if (msg.type === 'setStage') inline.setStage(Number(msg.stage ?? 0));
   if (msg.type === 'setDR') {
     inline.grip = Number(msg.grip ?? 1);
     inline.massScale = Number(msg.mass ?? 1);
@@ -212,12 +217,17 @@ async function swapInline(msg: Record<string, unknown>): Promise<void> {
   const points = quantizePoints((msg.points as number[]) ?? []);
   const halfWidth = Number(msg.halfWidth ?? 1);
   const mu = Number(msg.mu ?? 1);
+  if (!validateTrack(points, halfWidth).ok) {
+    controls.setStatus('track is not valid', 'bad');
+    return;
+  }
   const user = buildTrackFromPoints(points, { halfWidth, mu, source: 'user' });
   inlineFine?.stop();
   inlineFine = new FineTune(inline, { user, procedural: inlineProc });
   inlineFine.start();
   track = user;
   renderer.loadTrack(track);
+  heat.reset();
   history.replaceState(null, '', `#${encodeTrackHash(points, halfWidth, mu)}`);
   document.body.dataset.track = user.id;
 }
@@ -231,6 +241,10 @@ async function persist(name: string): Promise<void> {
 }
 
 async function restore(name: string): Promise<void> {
+  if (worker) {
+    worker.postMessage({ type: 'checkpointLoad', name });
+    return;
+  }
   const cp = await loadCheckpoint(name);
   if (!cp || !inline) {
     controls.setStatus(cp ? 'loaded' : 'no checkpoint', cp ? 'loaded' : 'miss');
@@ -250,18 +264,25 @@ let editorState: Partial<EditorState> = {};
 
 function mountEditor(): void {
   const stroke = document.querySelector('#stroke') as HTMLCanvasElement;
+  let editor: TrackEditor | null = null;
   const fit = () => {
     stroke.width = window.innerWidth;
     stroke.height = window.innerHeight;
+    // Resizing clears the canvas, so tell the editor the new size and redraw the stroke.
+    if (editor) {
+      editor.setSize(stroke.width, stroke.height, 0.04);
+      editor.commit();
+    }
   };
   fit();
-  const editor = new TrackEditor(stroke, {
+  editor = new TrackEditor(stroke, {
     width: stroke.width,
     height: stroke.height,
     scale: 0.04,
     onChange: (state) => {
       editorState = state;
-      adapt.textContent = state.validation.ok ? `valid ${state.ms.toFixed(1)} ms` : state.validation.issues.map((i) => i.reason).join(', ');
+      const reasons = [...new Set(state.validation.issues.map((i) => i.reason))];
+      adapt.textContent = state.validation.ok ? `valid ${state.ms.toFixed(1)} ms` : reasons.join(', ');
     },
   });
   if (location.hash.length > 2) {
@@ -288,7 +309,8 @@ function noteEnvTracks(ids: string[] | undefined): void {
 async function trainOnDrawn(): Promise<void> {
   const state = editorState as Partial<EditorState>;
   if (!state.track || !state.validation?.ok || !state.points) {
-    controls.setStatus('track is not valid', 'bad');
+    const reasons = [...new Set((state.validation?.issues ?? []).map((i) => i.reason))];
+    controls.setStatus(reasons.length ? `track is not valid: ${reasons.join(', ')}` : 'draw a track first', 'bad');
     return;
   }
   // Snap to mm: the track id, the URL hash and the learner's track all come from the same points.
@@ -304,6 +326,7 @@ async function trainOnDrawn(): Promise<void> {
   send({ type: 'setTrackPool', points: Array.from(points), halfWidth, mu, fineTune: true });
   track = built;
   renderer.loadTrack(track);
+  heat.reset();
   history.replaceState(null, '', `#${encodeTrackHash(points, halfWidth, mu)}`);
   (document.querySelector('#editor') as HTMLElement).hidden = true;
   controls.setStatus('training on drawn track', 'adapt');
@@ -315,7 +338,7 @@ async function trainOnDrawn(): Promise<void> {
  * identical, and it is a pure function of time so screenshots are reproducible.
  */
 function syntheticStream(): (now: number) => void {
-  const n = Math.min(64, Math.max(1, Number(params.get('cars') ?? 64)));
+  const n = carsParam(64);
   const poses = new Float32Array(n * 7);
   const t0 = performance.now();
   let lastPush = -Infinity;
@@ -367,7 +390,7 @@ async function startInline(): Promise<void> {
   track = seeds[0]!;
   inlineProc = seeds;
   renderer.loadTrack(track);
-  inline = new Trainer({ n: Number(params.get('cars') ?? 8), horizon: 32, epochs: 2, minibatch: 256 });
+  inline = new Trainer({ n: carsParam(8), horizon: 32, epochs: 2, minibatch: 256 });
   controls.setStatus('imitating pure pursuit', 'imitating');
   await inline.init(seeds);
   await inline.imitate(3);
@@ -439,7 +462,7 @@ function startWorker(): void {
       }
     }
     if (msg.type === 'trackAck') {
-      adapt.dataset.adapt = `track ${String(msg.trackId)} envs ${String(msg.envCount)}/${String(msg.envTotal)} hash ${String(msg.hash)}`;
+      adapt.dataset.adapt = `track ${String(msg.trackId)} envs ${String(msg.envCount)}/${String(msg.envTotal)} hash ${String(msg.hash)} weights ${msg.hash === msg.hashBefore ? 'unchanged' : 'CHANGED'}`;
       const d = document.body.dataset;
       d.swapAckTrack = String(msg.trackId);
       d.swapAckEnvs = `${String(msg.envCount)}/${String(msg.envTotal)}`;
@@ -455,7 +478,7 @@ function startWorker(): void {
     controls.setStatus('worker failed, inline', 'inline');
     void startInline();
   };
-  worker.postMessage({ type: 'init', n: Number(params.get('cars') ?? 8), seeds: [1, 2, 3, 4], stage: 0 });
+  worker.postMessage({ type: 'init', n: carsParam(8), seeds: [1, 2, 3, 4], stage: 0 });
 }
 
 window.addEventListener('keydown', (ev) => {

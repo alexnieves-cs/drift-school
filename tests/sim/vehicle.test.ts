@@ -86,37 +86,46 @@ describe('vehicle', () => {
     expect(peak / Math.abs(steady)).toBeLessThan(1.85);
   });
 
-  it('drifts with low rear grip and recovers under countersteer', () => {
-    const p = cloneCar(defaultCarParams());
-    p.drive = 'rwd';
-    p.split = 0;
-    p.tire.mu0 = 1.05;
-    p.tire.rearMuScale = 0.42;
-    p.tire.front = { B: 10, C: 1.6, E: 0.9 };
-    p.tire.rear = { B: 4.2, C: 1.35, E: 0.5 };
-    const car = new Vehicle(p);
-    for (let i = 0; i < 180; i++) {
-      const thr = Math.min(1, 0.45 + (6 - car.speed()) * 0.2);
-      car.step(0, thr, 0.02);
-    }
-    let peaked = 0;
+  it('holds a sustained drift with low rear grip and recovers when steer is released', () => {
+    const settle = (rearMu: number) => {
+      const p = cloneCar(defaultCarParams());
+      p.tire.rearMuScale = rearMu;
+      const car = new Vehicle(p);
+      for (let i = 0; i < 250; i++) car.step(0, Math.min(1, 0.5 + (5 - car.speed()) * 0.3), 0.02);
+      return car;
+    };
+    const rad = (d: number) => (d * Math.PI) / 180;
+
+    // Reduced rear grip: the rear axle stays sideways at a steady angle, the car keeps moving.
+    const car = settle(0.8);
+    const slips: number[] = [];
+    let peakYawRate = 0;
     for (let i = 0; i < 150; i++) {
-      car.step(0.85, 1, 0.02);
-      peaked = Math.max(peaked, Math.abs(car.meanSlip('rear')));
+      car.step(0.4, 0.7, 0.02);
+      slips.push(Math.abs(car.meanSlip('rear')));
+      peakYawRate = Math.max(peakYawRate, Math.abs(car.wYaw));
     }
-    expect(peaked).toBeGreaterThan((15 * Math.PI) / 180);
+    const late = slips.slice(-50);
+    expect(Math.min(...late)).toBeGreaterThan(rad(25));
+    expect(Math.max(...late)).toBeLessThan(rad(65));
+    expect(Math.max(...late) - Math.min(...late)).toBeLessThan(rad(10));
+    expect(peakYawRate).toBeLessThan(4);
+    expect(car.speed()).toBeGreaterThan(1.5);
+
+    // Releasing the steering brings the rear back under control.
     let recovered = false;
-    for (let i = 0; i < 200; i++) {
-      const slip = car.meanSlip('rear');
-      const counter = -Math.sign(slip || car.wYaw || 1) * 0.95;
-      car.step(counter, 0.05, 0.02);
-      if (Math.abs(car.meanSlip('rear')) < (8 * Math.PI) / 180 && Math.abs(car.wYaw) < 2.5) {
-        recovered = true;
-        break;
-      }
+    for (let i = 0; i < 200 && !recovered; i++) {
+      car.step(0, 0.3, 0.02);
+      recovered = Math.abs(car.meanSlip('rear')) < rad(8) && Math.abs(car.wYaw) < 1.5;
     }
     expect(recovered).toBe(true);
     expect(stateFinite(car.step(0, 0, 0.02))).toBe(true);
+
+    // Negative control: far less rear grip is a spin-out, not a drift (yaw sweeps more than two turns).
+    const spin = settle(0.5);
+    const yaw0 = spin.yaw;
+    for (let i = 0; i < 150; i++) spin.step(0.7, 0.7, 0.02);
+    expect(Math.abs(spin.yaw - yaw0)).toBeGreaterThan(4 * Math.PI);
   });
 
   it('matches a twin given the same controls', () => {
@@ -148,16 +157,6 @@ describe('vehicle', () => {
     expect(stateFinite(car.step(0, 0, dt))).toBe(true);
   });
 
-  it('control step (10 substeps) stays under 0.15 ms', () => {
-    const car = new Vehicle(defaultCarParams());
-    for (let i = 0; i < 200; i++) car.step(0.2, 0.5, 0.02);
-    const n = 2000;
-    const t0 = performance.now();
-    for (let i = 0; i < n; i++) car.step((i & 8) ? 0.3 : -0.2, 0.6, 0.02);
-    const ms = (performance.now() - t0) / n;
-    expect(ms).toBeLessThan(0.15);
-  });
-
   it('bounces off a Rapier wall with restitution', async () => {
     await initRapier();
     const world = new WallWorld();
@@ -166,12 +165,16 @@ describe('vehicle', () => {
     const car = new Vehicle(defaultCarParams());
     car.walls = world;
     car.reset({ x: 0, z: 0, yaw: Math.PI / 2, speed: 6 });
-    let hit = false;
+    let rebounded = false;
+    let maxZ = -Infinity;
     for (let i = 0; i < 80; i++) {
       car.step(0, 0.2, 0.02);
-      if (car.pz > 1.5 && car.vx < 0) hit = true;
+      maxZ = Math.max(maxZ, car.pz);
+      if (car.vx < -0.5) rebounded = true;
     }
-    expect(hit || car.pz < 2.2).toBe(true);
+    expect(rebounded).toBe(true);
+    // The wall sits at z = 2; the chassis may graze it but must not tunnel through.
+    expect(maxZ).toBeLessThan(2.1);
     expect(stateFinite(car.step(0, 0, 0.02))).toBe(true);
     world.free();
   });

@@ -1,10 +1,10 @@
 # Perf
 
-Measured on this machine with Vitest, single thread.
+Measured on a Linux container (CPU only, software GL) with `npm run bench`, `npm run eval` and `npm run test:e2e`. Budgets that depend on wall-clock live in `tests/perf` (warm JIT, best of 7, `PERF_SLACK` multiplier) and are not part of `npm test`.
 
-- One `Vehicle.step` at 50 Hz control (10 substeps) is under the 0.15 ms budget. See `tests/sim/vehicle.test.ts` and `tests/perf/budget.bench.ts`.
-- `VecEnv` at n=32 measured about 6800 car-steps/s here (asserted above 6k). That is one process, not four workers. A PPO update on 8 cars measured about 700 steps/s with the TF.js CPU backend.
-- Headless Chromium, low preset, 64 ghost cars: about 34 fps. The spec's 50 fps high-preset number is for a mid-range laptop and was not measured here.
-- A PPO update on the policy network is far slower than the env. Training throughput with the network in the loop stayed near 800 steps/s in earlier probes. The 2 s/update WebGL budget is not met on the CPU backend.
-- Editor `validateTrack` on a stadium is asserted under 16 ms.
-- Render fps is measured in Playwright (`tests/e2e/app.spec.ts`) on the ghost view. The spec asks for 50 fps with 64 ghosts at the high preset. The e2e floor checked in CI-less Playwright is 30 fps, because software GL on a headless box is not a mid-range laptop.
+- One `Vehicle.step` at 50 Hz control (10 substeps) is under the 0.15 ms budget.
+- A full `VecEnv` step at n=32 (substeps, 21 rays, track lookup, reward) takes about 0.076 ms per car warm, about 13k car-steps/s in one process. A cold first run is slower (JIT), which is why the budget is benched warm. There is no four-worker SharedArrayBuffer pool, so the SPEC's 20k steps/s is not claimed.
+- Training with the PPO update in the loop (8 cars, horizon 48, TF.js CPU backend) runs at about 500 steps/s.
+- `generateTrack` median 1.4 ms, p99 9.4 ms. Editor `validateTrack` is asserted under 16 ms.
+- Software GL renders the ghost view at about 6-7 fps regardless of car count (1280x720). The SPEC's 50 fps with 64 ghosts at the high preset needs a GPU and was not measured. With the editor open the scene is drawn at a quarter rate so strokes stay responsive.
+- In the browser the worker finishes an update every few seconds under software GL because rendering competes for the same CPU; Node runs the same update in under a second.

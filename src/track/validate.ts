@@ -102,6 +102,8 @@ export function validateLoop(loop: BuiltLoop): ValidationIssue[] {
 
   let worstK = 0;
   let worstAt = loop.center[0]!;
+  let outAt: V2 | null = null;
+  let outBy = 0;
   for (let i = 0; i < loop.center.length; i++) {
     const k = Math.abs(loop.curvature[i] ?? 0);
     if (k > worstK) {
@@ -109,8 +111,14 @@ export function validateLoop(loop: BuiltLoop): ValidationIssue[] {
       worstAt = loop.center[i]!;
     }
     const p = loop.center[i]!;
-    if (Math.abs(p.x) > BOUNDS || Math.abs(p.z) > BOUNDS) push('bounds', p);
+    const over = Math.max(Math.abs(p.x), Math.abs(p.z)) - BOUNDS;
+    if (over > outBy) {
+      outBy = over;
+      outAt = p;
+    }
   }
+  // One issue, at the worst point, rather than one per sample.
+  if (outAt) push('bounds', outAt);
   if (worstK > 1 / MIN_RADIUS) push('minRadius', worstAt);
 
   const hitL = selfIntersects(loop.left);
@@ -121,16 +129,21 @@ export function validateLoop(loop: BuiltLoop): ValidationIssue[] {
   else if (hitC) push('selfIntersect', hitC);
 
   const n = loop.center.length;
-  const minSepIdx = Math.max(3, Math.round(n * 0.08));
+  // Points closer than this along the loop are the same turn, not a second strand. The floor is
+  // twice the clearance in arc length, so a legal tight turn is not reported as overlapping itself.
+  const clearance = loop.halfWidth * 2 + EDGE_GAP;
+  const spacing = loop.length / n || 0.1;
+  const minSepIdx = Math.max(3, Math.round(n * 0.08), Math.round((2 * clearance) / spacing));
   let overlapAt: V2 | null = null;
-  for (let i = 0; i < n && !overlapAt; i++) {
-    for (let j = i + minSepIdx; j < n; j++) {
+  // Every 4th sample (0.4 m apart) keeps the all-pairs scan inside the live-edit budget on long tracks.
+  const stride = 4;
+  for (let i = 0; i < n && !overlapAt; i += stride) {
+    for (let j = i + minSepIdx; j < n; j += stride) {
       const wrap = Math.min(j - i, n - (j - i));
       if (wrap < minSepIdx) continue;
       const a = loop.center[i]!;
       const b = loop.center[j]!;
-      const need = loop.halfWidth * 2 + EDGE_GAP;
-      if (Math.hypot(a.x - b.x, a.z - b.z) < need) {
+      if (Math.hypot(a.x - b.x, a.z - b.z) < clearance) {
         overlapAt = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
         break;
       }

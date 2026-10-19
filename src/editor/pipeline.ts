@@ -33,7 +33,7 @@ export function processStroke(raw: V2[], halfWidth: number, mu: number): StrokeR
   const first = raw[0];
   const last = raw[raw.length - 1];
   const closed = !!first && !!last && dist(first, last) < CLOSE_DISTANCE;
-  const smooth = smoothStroke(raw, closed);
+  const smooth = smoothStroke(raw, closed, halfWidth);
   // Preferred: smoothed and curvature-limited. Fallbacks: smoothed only, then the raw stroke.
   const candidates = closed
     ? [

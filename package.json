@@ -14,13 +14,13 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "bench": "vitest run tests/perf",
-    "eval": "vite-node scripts/eval.ts --"
+    "bench": "vitest run --config vitest.bench.config.ts",
+    "eval": "vite-node scripts/eval.ts --",
+    "media": "vite-node scripts/media.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.14.0",
     "@tensorflow/tfjs": "4.22.0",
-    "comlink": "4.4.2",
     "fflate": "0.8.2",
     "three": "0.170.0",
     "uplot": "1.6.31"
@@ -34,6 +34,7 @@
     "typescript": "5.7.2",
     "typescript-eslint": "8.19.0",
     "vite": "6.0.7",
+    "vite-node": "2.1.8",
     "vitest": "2.1.8"
   }
 }

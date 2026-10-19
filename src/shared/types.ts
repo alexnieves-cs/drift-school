@@ -160,6 +160,8 @@ export interface GenStat {
   gen: number;
   bestLap: number | null;
   meanLap: number | null;
+  /** Episodes that finished during this update. When 0, completion and crashRate are 0 and carry no information. */
+  episodes: number;
   completion: number;
   crashRate: number;
   topSpeed: number;

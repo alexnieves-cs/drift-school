@@ -41,6 +41,7 @@ aside, footer {
 .row { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 label { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem; color: var(--muted); }
 .hint, .adapt { margin: 0; color: var(--muted); font-size: 0.75rem; }
+#board { max-height: 15rem; overflow-y: auto; }
 .board { width: 100%; border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 0.72rem; }
 .board th, .board td { padding: 0.25rem 0.3rem; text-align: right; border-bottom: 1px solid var(--line); }
 .board tr { cursor: pointer; }

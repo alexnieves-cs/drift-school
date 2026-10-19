@@ -9,16 +9,20 @@ function fmt(v: number | null): string {
 
 /**
  * One row per PPO update, newest first. `rows` is the full history, the table body is capped at
- * MAX_DOM_ROWS so a long session does not grow the DOM without bound. `data-rows` carries the total.
+ * MAX_DOM_ROWS so a long session does not grow the DOM without bound. `data-rows` (on the table and
+ * its parent) carries the total.
  */
 export class Leaderboard {
   readonly rows: GenStat[] = [];
+  private parent: HTMLElement;
   private table: HTMLTableElement;
   private body: HTMLElement;
   private onPick: (gen: number) => void;
 
   constructor(parent: HTMLElement, onPick: (gen: number) => void) {
     this.onPick = onPick;
+    this.parent = parent;
+    parent.dataset.rows = '0';
     this.table = document.createElement('table');
     this.table.className = 'board';
     this.table.dataset.rows = '0';
@@ -47,10 +51,11 @@ export class Leaderboard {
     tr.tabIndex = 0;
     tr.setAttribute('role', 'button');
     tr.title = `replay generation ${stat.gen}`;
-    tr.innerHTML = `<td>${stat.gen}</td><td>${fmt(stat.bestLap)}</td><td>${fmt(stat.meanLap)}</td><td>${(stat.completion * 100).toFixed(0)}%</td><td>${(stat.crashRate * 100).toFixed(0)}%</td><td>${stat.topSpeed.toFixed(1)}</td>`;
+    tr.innerHTML = `<td>${stat.gen}</td><td>${fmt(stat.bestLap)}</td><td>${fmt(stat.meanLap)}</td><td>${stat.episodes ? `${(stat.completion * 100).toFixed(0)}%` : '—'}</td><td>${stat.episodes ? `${(stat.crashRate * 100).toFixed(0)}%` : '—'}</td><td>${stat.episodes ? stat.topSpeed.toFixed(1) : '—'}</td>`;
     this.body.prepend(tr);
     if (this.body.childElementCount > MAX_DOM_ROWS) this.body.lastElementChild?.remove();
     this.table.dataset.rows = String(this.rows.length);
+    this.parent.dataset.rows = String(this.rows.length);
   }
 
   /** Mark the row being replayed. */

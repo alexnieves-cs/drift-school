@@ -7,16 +7,16 @@ import type { Vehicle } from './car/vehicle';
 import { getWallGrid, type WallGrid } from './wallGrid';
 
 /**
- * Flags that change what the sensors report. Defaults reproduce the behavior the policy was
- * trained against. See NOTES/phys.md ("ray bug").
+ * Flags that change what the sensors report. See NOTES/phys.md ("ray bug").
  */
 export const SENSOR_FLAGS = {
   /**
-   * false (default): legacy rule. Every segment the ray crosses is visited in wall order and
-   * `hit < best` compares a fraction t in [0,1] against `best` in metres, so a farther crossing
-   * visited later can overwrite a nearer one. true: the real nearest hit.
+   * true (default): the real nearest hit. false: the original buggy rule, kept for the
+   * equivalence tests. Every segment the ray crosses is visited in wall order and `hit < best`
+   * compared a fraction t in [0,1] against `best` in metres, so a farther crossing visited later
+   * could overwrite a nearer one.
    */
-  nearestRay: false,
+  nearestRay: true,
 };
 
 export class RayField {

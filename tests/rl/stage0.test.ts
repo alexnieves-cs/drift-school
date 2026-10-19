@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Trainer } from '../../src/rl/trainer';
 import { generateTrack } from '../../src/track/generate';
 import { buildTrackFromPoints } from '../../src/track/build';
-import { trainRecipe } from '../../src/rl/recipe';
+import { BROWSER_TUNE, configureFinetune, trainRecipe } from '../../src/rl/recipe';
 import { STAGE0_HELD_OUT, DEFAULT_TRAIN_SEEDS, assertTrainSeeds } from '../../src/rl/seeds';
 import { casesFor, evaluateCases } from '../../src/eval/harness';
 
@@ -35,7 +35,18 @@ describe('stage 0 training', () => {
     expect(() => assertTrainSeeds(DEFAULT_TRAIN_SEEDS)).not.toThrow();
   });
 
-  it('swaps the track pool without changing weights', async () => {
+  it('keeps the browser policy through further PPO updates', async () => {
+    // The learner worker keeps running PPO after its imitation start (see learner.worker.ts);
+    // those updates must not wreck the policy before the user draws anything.
+    const { trainer } = await trainRecipe({ maxStage: 0, ppoUpdates: 0, validate: false, tune: BROWSER_TUNE });
+    configureFinetune(trainer);
+    for (let i = 0; i < 6; i++) await trainer.update();
+    const tracks = STAGE0_HELD_OUT.slice(0, 4).map((seed) => generateTrack({ seed, stage: 0 }));
+    const out = evaluateCases((obs, n) => trainer.policy.actMean(obs, n), casesFor(tracks, { copies: 2 }));
+    expect(out.rate).toBeGreaterThanOrEqual(0.7);
+  }, 180_000);
+
+  it('swaps the track pool without changing weights, with every env starting on the new track', async () => {
     const tracks = [generateTrack({ seed: 2, stage: 0 })];
     const trainer = new Trainer({ n: 4, horizon: 16, epochs: 1, minibatch: 64 });
     await trainer.init(tracks);
@@ -47,7 +58,7 @@ describe('stage 0 training', () => {
     trainer.queueTrackPool([custom, tracks[0]!], true);
     trainer.forceSwap();
     expect(trainer.weightHash()).toBe(before);
-    expect(trainer.env.trackId(0)).toBe(custom.id);
+    expect(trainer.env.trackIds()).toEqual(['user-s', 'user-s', 'user-s', 'user-s']);
     expect(trainer.mix.entropy).toBe(0.02);
     expect(trainer.mix.weights[0]).toBeCloseTo(0.7, 2);
   });

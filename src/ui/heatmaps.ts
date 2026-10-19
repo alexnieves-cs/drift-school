@@ -28,6 +28,12 @@ export class Heatmap {
     parent.appendChild(this.canvas);
   }
 
+  /** Forget the previous track's speeds and crash dots. */
+  reset(): void {
+    this.speeds.clear();
+    this.crashes.length = 0;
+  }
+
   /** Record one observation. Cheap; the repaint happens in flush(). */
   note(track: TrackSpec, s: number, speed: number, crash: boolean, x: number, z: number): void {
     void track;

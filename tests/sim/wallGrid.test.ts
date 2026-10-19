@@ -118,6 +118,7 @@ function poses(track: TrackSpec, n: number, seed: number) {
 describe('wall grid equals the brute-force loops', () => {
   for (const nearest of [false, true]) {
     it(`ray distances are identical (${nearest ? 'nearest' : 'legacy'} rule)`, () => {
+      const saved = SENSOR_FLAGS.nearestRay;
       SENSOR_FLAGS.nearestRay = nearest;
       try {
         let checked = 0;
@@ -134,7 +135,7 @@ describe('wall grid equals the brute-force loops', () => {
         }
         expect(checked).toBeGreaterThan(2000);
       } finally {
-        SENSOR_FLAGS.nearestRay = false;
+        SENSOR_FLAGS.nearestRay = saved;
       }
     });
   }
