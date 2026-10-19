@@ -3,7 +3,7 @@
   --ink: #efeae2;
   --muted: #9aa3b5;
   --bg: #10161c;
-  --panel: rgba(16, 20, 28, 0.82);
+  --panel: rgba(16, 20, 28, 0.92);
   --line: #2a3344;
   --amber: #ffb020;
   --good: #3dd68c;
@@ -27,9 +27,10 @@ button.on, button:hover { border-color: var(--amber); color: var(--amber); }
 aside, footer {
   position: absolute;
   z-index: 2;
+  /* No backdrop-filter: blurring a live WebGL canvas every frame costs ~14 ms of compositing per frame in software and a lot on weak iGPUs. */
   background: var(--panel);
   border: 1px solid var(--line);
-  backdrop-filter: blur(8px);
+  contain: layout paint;
   padding: 0.75rem;
 }
 #left { top: 12px; left: 12px; width: min(280px, 92vw); display: flex; flex-direction: column; gap: 0.45rem; z-index: 5; }
@@ -44,7 +45,8 @@ label { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0
 .board { width: 100%; border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 0.72rem; }
 .board th, .board td { padding: 0.25rem 0.3rem; text-align: right; border-bottom: 1px solid var(--line); }
 .board tr { cursor: pointer; }
-.board tr:hover { color: var(--amber); }
+.board tr:hover, .board tr:focus-visible, .board tr.replaying { color: var(--amber); outline: none; }
+.board tr.replaying td { background: rgba(255, 176, 32, 0.12); }
 .chart { margin-top: 0.35rem; }
 .telemetry { display: flex; gap: 0.75rem; align-items: center; }
 .tel-bars { display: grid; gap: 0.25rem; min-width: 180px; font-family: ui-monospace, monospace; font-size: 0.72rem; }
@@ -104,3 +106,10 @@ label { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0
   white-space: nowrap;
 }
 #showcase { position: relative; height: 100%; overflow: hidden; }
+
+/* Adaptation panel (hot-swap metrics). */
+.adaptation { border-top: 1px solid var(--line); padding-top: 0.45rem; font-size: 0.75rem; color: var(--muted); }
+.adaptation[hidden] { display: none; }
+.adaptation h3 { margin: 0 0 0.25rem; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); }
+.adaptation p { margin: 0 0 0.15rem; }
+.adaptation .spark { width: 100%; height: 36px; color: var(--amber); background: #0c1116; border-radius: 4px; }

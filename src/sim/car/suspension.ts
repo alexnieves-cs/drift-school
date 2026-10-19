@@ -27,11 +27,16 @@ export function rideRest(mass: number, k: number, cgHeight: number, g = 9.81): {
   return { delta, rest: cgHeight + delta };
 }
 
-export function applyArb(forces: number[], comp: ArrayLike<number>, arb: number): void {
+/** `rideRest(...).rest` without the result object. */
+export function restHeight(mass: number, k: number, cgHeight: number, g = 9.81): number {
+  return cgHeight + (mass * g) / (4 * k);
+}
+
+export function applyArb(forces: { [i: number]: number }, comp: ArrayLike<number>, arb: number): void {
   const front = antiRoll(comp[0] ?? 0, comp[1] ?? 0, arb);
   const rear = antiRoll(comp[2] ?? 0, comp[3] ?? 0, arb);
-  forces[0] = Math.max(0, (forces[0] ?? 0) + front);
-  forces[1] = Math.max(0, (forces[1] ?? 0) - front);
-  forces[2] = Math.max(0, (forces[2] ?? 0) + rear);
-  forces[3] = Math.max(0, (forces[3] ?? 0) - rear);
+  forces[0] = Math.max(0, forces[0]! + front);
+  forces[1] = Math.max(0, forces[1]! - front);
+  forces[2] = Math.max(0, forces[2]! + rear);
+  forces[3] = Math.max(0, forces[3]! - rear);
 }

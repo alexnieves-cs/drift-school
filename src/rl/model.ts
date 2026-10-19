@@ -2,21 +2,27 @@ import * as tf from '@tensorflow/tfjs';
 import { ACT_DIM, OBS_DIM, type Policy } from '../shared/types';
 import { makeRng, randn, type RNG } from '../shared/rng';
 
-const HIDDEN = 128;
+export const HIDDEN = 128;
 
 export class GaussianPolicy implements Policy {
   readonly pi: tf.LayersModel;
   readonly value: tf.LayersModel;
   readonly logStd: tf.Variable;
   private opt: tf.Optimizer;
+  private valueOpt: tf.Optimizer;
   lr: number;
-  /** Source of the exploration noise. Seeded, so a seed reproduces the rollout. */
-  private noise: RNG;
+  /** Seeded stream for action sampling. Weight init is seeded from the same `seed`. */
+  private rng: RNG;
+  /** Global-norm gradient clip for PPO steps. */
+  maxGradNorm = 0.5;
 
+  /**
+   * `seed` makes initial weights and exploration noise reproducible. TF.js's own RNG is never
+   * used, so two policies built with the same seed and fed the same data stay identical.
+   */
   constructor(lr = 3e-4, seed = 1) {
     this.lr = lr;
-    this.noise = makeRng(seed, 'policy/noise');
-    // Every initializer carries its own seed: tf's global RNG would make runs differ.
+    this.rng = makeRng(seed, 'policy/act');
     const init = (k: number) => tf.initializers.glorotUniform({ seed: seed * 101 + k });
     const input = tf.input({ shape: [OBS_DIM] });
     let h = tf.layers.dense({ units: HIDDEN, activation: 'tanh', kernelInitializer: init(1) }).apply(input) as tf.SymbolicTensor;
@@ -31,14 +37,18 @@ export class GaussianPolicy implements Policy {
     const v = tf.layers.dense({ units: 1, kernelInitializer: init(6) }).apply(vh) as tf.SymbolicTensor;
     this.value = tf.model({ inputs: vi, outputs: v });
     this.logStd = tf.variable(tf.tensor1d([-1.4, -1.2]), true);
-    // Start with some forward throttle.
-    tf.tidy(() => {
-      const last = this.pi.getWeights();
+    const last = this.pi.getWeights();
+    const bias = last[last.length - 1]!;
+    const b = bias.dataSync().slice();
+    if (b.length === ACT_DIM) {
+      b[0] = 0;
+      b[1] = 0.7;
       const next = last.slice(0, -1);
-      next.push(tf.tensor1d([0, 0.7]));
+      next.push(tf.tensor1d(Array.from(b)));
       this.pi.setWeights(next);
-    });
+    }
     this.opt = tf.train.adam(lr);
+    this.valueOpt = tf.train.adam(1e-3);
   }
 
   setLr(lr: number): void {
@@ -47,22 +57,37 @@ export class GaussianPolicy implements Policy {
     this.opt = tf.train.adam(lr);
   }
 
+  setLogStd(steer: number, throttle: number): void {
+    this.logStd.assign(tf.tensor1d([steer, throttle]));
+  }
+
+  getLogStd(): number[] {
+    return Array.from(this.logStd.dataSync());
+  }
+
+  /** Gaussian noise from the seeded stream (never TF's global RNG). */
+  private noise(n: number): tf.Tensor2D {
+    const buf = new Float32Array(n * ACT_DIM);
+    for (let i = 0; i < buf.length; i++) buf[i] = randn(this.rng);
+    return tf.tensor2d(buf, [n, ACT_DIM]);
+  }
+
   /**
-   * Sample actions. `pre` is the pre-tanh sample; `ppoLoss` needs it back exactly, because
-   * recovering it with atanh is wrong once `action` saturates.
+   * `pre` is the pre-tanh Gaussian sample. PPO must score the sample it drew: recomputing it as
+   * atanh(action) is wrong once actions saturate at +-1 (the imitation policy's do), and made the
+   * old/new log-ratio huge so every PPO update was clipped to nothing.
    */
-  act(obs: Float32Array, n: number): { action: Float32Array; pre: Float32Array; logp: Float32Array; value: Float32Array } {
+  act(obs: Float32Array, n: number): { action: Float32Array; logp: Float32Array; value: Float32Array; pre: Float32Array } {
     const action = new Float32Array(n * ACT_DIM);
     const pre = new Float32Array(n * ACT_DIM);
     const logp = new Float32Array(n);
     const value = new Float32Array(n);
-    const eps = new Float32Array(n * ACT_DIM);
-    for (let i = 0; i < eps.length; i++) eps[i] = randn(this.noise);
     tf.tidy(() => {
       const x = tf.tensor2d(obs, [n, OBS_DIM]);
       const mean = this.pi.apply(x) as tf.Tensor2D;
       const std = tf.exp(this.logStd).reshape([1, ACT_DIM]);
-      const u = mean.add(std.mul(tf.tensor2d(eps, [n, ACT_DIM])));
+      const eps = this.noise(n);
+      const u = mean.add(std.mul(eps));
       const a = tf.tanh(u);
       const v = (this.value.apply(x) as tf.Tensor).reshape([n]);
       const logProb = gaussianLogp(u, mean, std).sub(tf.log(tf.scalar(1).sub(a.square()).add(1e-6)).sum(-1));
@@ -71,17 +96,7 @@ export class GaussianPolicy implements Policy {
       logp.set(logProb.dataSync() as Float32Array);
       value.set(v.dataSync() as Float32Array);
     });
-    return { action, pre, logp, value };
-  }
-
-  /** State value for each observation row. */
-  valueOf(obs: Float32Array, n: number): Float32Array {
-    const out = new Float32Array(n);
-    tf.tidy(() => {
-      const x = tf.tensor2d(obs, [n, OBS_DIM]);
-      out.set((this.value.apply(x) as tf.Tensor).reshape([n]).dataSync() as Float32Array);
-    });
-    return out;
+    return { action, logp, value, pre };
   }
 
   /** Deterministic mean action, used for the showcase car. */
@@ -95,7 +110,7 @@ export class GaussianPolicy implements Policy {
     return action;
   }
 
-  imitate(obs: Float32Array, actions: Float32Array, n: number, lr = 1e-3): number {
+  imitate(obs: Float32Array, actions: Float32Array, n: number, lr = this.lr): number {
     const x = tf.tensor2d(obs, [n, OBS_DIM]);
     const y = tf.tensor2d(actions, [n, ACT_DIM]);
     const vars = this.pi.trainableWeights.map((w) => (w as unknown as { val: tf.Variable }).val);
@@ -138,8 +153,8 @@ export class GaussianPolicy implements Policy {
     let slot = this.slots.get(v.name);
     if (!slot) {
       slot = {
-        m: tf.variable(tf.zeros(v.shape)),
-        v: tf.variable(tf.zeros(v.shape)),
+        m: tf.variable(tf.zeros(v.shape), false),
+        v: tf.variable(tf.zeros(v.shape), false),
       };
       this.slots.set(v.name, slot);
     }
@@ -147,50 +162,110 @@ export class GaussianPolicy implements Policy {
   }
 
   /**
-   * One clipped-PPO Adam step on a minibatch. `pre` are the stored pre-tanh samples from `act`.
-   * `policyScale` of 0 trains only the value head (critic warm-up).
+   * One clipped-PPO minibatch step (Adam, global grad-norm clip). `policyStep: false` trains
+   * the critic only, which the recipe uses to fit the value head before the policy is touched.
    */
   ppoLoss(
     obs: Float32Array,
-    pre: Float32Array,
+    actions: Float32Array,
     oldLogp: Float32Array,
     adv: Float32Array,
     returns: Float32Array,
     n: number,
     clip: number,
     entCoef: number,
-    policyScale = 1,
+    policyStep = true,
+    pre?: Float32Array,
   ): { loss: number; kl: number; entropy: number; valueLoss: number } {
+    const x = tf.tensor2d(obs, [n, OBS_DIM]);
+    const act = tf.tensor2d(actions, [n, ACT_DIM]);
+    const old = tf.tensor1d(oldLogp);
+    const advantage = tf.tensor1d(adv);
+    const ret = tf.tensor1d(returns);
+    const preT = pre ? tf.tensor2d(pre, [n, ACT_DIM]) : null;
     let kl = 0;
     let entropy = 0;
     let valueLoss = 0;
     let loss = 0;
-    tf.tidy(() => {
-      const x = tf.tensor2d(obs, [n, OBS_DIM]);
-      const u = tf.tensor2d(pre, [n, ACT_DIM]);
-      const old = tf.tensor1d(oldLogp);
-      const advantage = tf.tensor1d(adv);
-      const ret = tf.tensor1d(returns);
-      this.opt.minimize(() => {
-        const mean = this.pi.apply(x) as tf.Tensor2D;
-        const std = tf.exp(this.logStd).reshape([1, ACT_DIM]);
-        const logProb = gaussianLogp(u, mean, std).sub(tf.log(tf.scalar(1).sub(tf.tanh(u).square()).add(1e-6)).sum(-1));
-        const ratio = tf.exp(logProb.sub(old));
-        const unclipped = ratio.mul(advantage);
-        const clipped = tf.clipByValue(ratio, 1 - clip, 1 + clip).mul(advantage);
-        const policyLoss = tf.minimum(unclipped, clipped).mean().neg();
-        const vpred = (this.value.apply(x) as tf.Tensor).reshape([n]);
-        const vLoss = vpred.sub(ret).square().mean();
-        const ent = this.logStd.add(0.5 * (1 + Math.log(2 * Math.PI))).sum();
-        const total = policyLoss.mul(policyScale).add(vLoss.mul(0.5)).sub(ent.mul(entCoef * policyScale)) as tf.Scalar;
-        kl = old.sub(logProb).mean().dataSync()[0] ?? 0;
-        entropy = ent.dataSync()[0] ?? 0;
-        valueLoss = vLoss.dataSync()[0] ?? 0;
-        loss = total.dataSync()[0] ?? 0;
-        return total;
-      });
-    });
+    const vars = policyStep
+      ? [...this.piVars(), this.logStd, ...this.valueVars()]
+      : this.valueVars();
+    const opt = policyStep ? this.opt : this.valueOpt;
+    const { grads, value } = tf.variableGrads(() => {
+      const mean = this.pi.apply(x) as tf.Tensor2D;
+      const std = tf.exp(this.logStd).reshape([1, ACT_DIM]);
+      const u = preT ?? tf.atanh(act.clipByValue(-0.999, 0.999));
+      const logProb = gaussianLogp(u, mean, std).sub(
+        tf.log(tf.scalar(1).sub(tf.tanh(u).square()).add(1e-6)).sum(-1),
+      );
+      const ratio = tf.exp(logProb.sub(old));
+      const unclipped = ratio.mul(advantage);
+      const clippedR = tf.clipByValue(ratio, 1 - clip, 1 + clip).mul(advantage);
+      const policyLoss = tf.minimum(unclipped, clippedR).mean().neg();
+      const vpred = (this.value.apply(x) as tf.Tensor).reshape([n]);
+      const vLoss = vpred.sub(ret).square().mean();
+      const ent = this.logStd.add(0.5 * (1 + Math.log(2 * Math.PI))).sum();
+      kl = old.sub(logProb).mean().dataSync()[0] ?? 0;
+      entropy = ent.dataSync()[0] ?? 0;
+      valueLoss = vLoss.dataSync()[0] ?? 0;
+      return (policyStep ? policyLoss.add(vLoss.mul(0.5)).sub(ent.mul(entCoef)) : vLoss) as tf.Scalar;
+    }, vars);
+    loss = value.dataSync()[0] ?? 0;
+    const norm = this.clipGrads(grads);
+    void norm;
+    opt.applyGradients(grads);
+    if (policyStep) {
+      // Keep exploration std in a sane band so PPO cannot collapse or blow it up.
+      const ls = tf.tidy(() => this.logStd.clipByValue(-3.2, -0.4));
+      this.logStd.assign(ls);
+      ls.dispose();
+    }
+    value.dispose();
+    tf.dispose(grads);
+    x.dispose();
+    act.dispose();
+    old.dispose();
+    advantage.dispose();
+    ret.dispose();
+    preT?.dispose();
     return { loss, kl, entropy, valueLoss };
+  }
+
+  private piVars(): tf.Variable[] {
+    return this.pi.trainableWeights.map((w) => (w as unknown as { val: tf.Variable }).val);
+  }
+
+  private valueVars(): tf.Variable[] {
+    return this.value.trainableWeights.map((w) => (w as unknown as { val: tf.Variable }).val);
+  }
+
+  /** Scales `grads` in place to a global L2 norm of at most `maxGradNorm`. Returns the pre-clip norm. */
+  private clipGrads(grads: tf.NamedTensorMap): number {
+    const names = Object.keys(grads);
+    let sq = 0;
+    for (const k of names) sq += tf.tidy(() => grads[k]!.square().sum()).dataSync()[0] ?? 0;
+    const norm = Math.sqrt(sq);
+    if (norm > this.maxGradNorm && norm > 0) {
+      const f = this.maxGradNorm / norm;
+      for (const k of names) {
+        const g = grads[k]!;
+        grads[k] = tf.tidy(() => g.mul(f));
+        g.dispose();
+      }
+    }
+    return norm;
+  }
+
+  /** Mean-network weights as flat arrays (W1, b1, W2, b2, W3, b3), TF dense layout. */
+  getPiWeights(): Float32Array[] {
+    return this.pi.getWeights().map((w) => Float32Array.from(w.dataSync() as Float32Array));
+  }
+
+  setPiWeights(arrays: Float32Array[]): void {
+    const shapes = this.pi.getWeights().map((w) => w.shape);
+    const made = arrays.map((a, i) => tf.tensor(a, shapes[i]));
+    this.pi.setWeights(made);
+    for (const t of made) t.dispose();
   }
 
   getWeights(): ArrayBuffer[] {
@@ -208,15 +283,20 @@ export class GaussianPolicy implements Policy {
   }
 
   setWeights(weights: ArrayBuffer[]): void {
-    tf.tidy(() => {
-      const piW = this.pi.getWeights();
-      const vW = this.value.getWeights();
-      let k = 0;
-      const take = (shape: number[]) => tf.tensor(new Float32Array(weights[k++]!.slice(0)), shape);
-      this.pi.setWeights(piW.map((w) => take(w.shape)));
-      this.logStd.assign(tf.tensor1d(new Float32Array(weights[k++]!.slice(0))));
-      this.value.setWeights(vW.map((w) => take(w.shape)));
-    });
+    const piW = this.pi.getWeights();
+    const vW = this.value.getWeights();
+    let k = 0;
+    const made: tf.Tensor[] = [];
+    const take = (shape: number[]) => {
+      const t = tf.tensor(new Float32Array(weights[k++]!.slice(0)), shape);
+      made.push(t);
+      return t;
+    };
+    this.pi.setWeights(piW.map((w) => take(w.shape)));
+    const std = new Float32Array(weights[k++]!.slice(0));
+    this.logStd.assign(tf.tensor1d(Array.from(std)));
+    this.value.setWeights(vW.map((w) => take(w.shape)));
+    for (const t of made) t.dispose();
   }
 
   dispose(): void {
@@ -224,6 +304,7 @@ export class GaussianPolicy implements Policy {
     this.value.dispose();
     this.logStd.dispose();
     this.opt.dispose();
+    this.valueOpt.dispose();
     for (const slot of this.slots.values()) {
       slot.m.dispose();
       slot.v.dispose();

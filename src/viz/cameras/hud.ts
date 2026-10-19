@@ -71,9 +71,12 @@ export class Hud {
     if (mapPts && car) this.drawMap(mapPts, car);
   }
 
-  private drawMap(pts: { x: number; z: number }[], car: { x: number; z: number }): void {
-    const ctx = this.map.getContext('2d');
-    if (!ctx || pts.length < 2) return;
+  /** Track outline drawn once per point list into an offscreen canvas, plus its fit transform. */
+  private mapKey: { x: number; z: number }[] | null = null;
+  private mapLayer: HTMLCanvasElement | null = null;
+  private mapFit = { ox: 0, oz: 0, s: 1 };
+
+  private buildMapLayer(pts: { x: number; z: number }[]): void {
     let minX = Infinity;
     let maxX = -Infinity;
     let minZ = Infinity;
@@ -84,25 +87,37 @@ export class Hud {
       minZ = Math.min(minZ, p.z);
       maxZ = Math.max(maxZ, p.z);
     }
-    const sx = 100 / Math.max(1, maxX - minX);
-    const sz = 64 / Math.max(1, maxZ - minZ);
-    const s = Math.min(sx, sz);
-    const ox = 10 - minX * s;
-    const oz = 8 - minZ * s;
+    const s = Math.min(100 / Math.max(1, maxX - minX), 64 / Math.max(1, maxZ - minZ));
+    this.mapFit = { ox: 10 - minX * s, oz: 8 - minZ * s, s };
+    const layer = document.createElement('canvas');
+    layer.width = 120;
+    layer.height = 80;
+    const ctx = layer.getContext('2d');
+    if (ctx) {
+      ctx.strokeStyle = '#efeae2';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      pts.forEach((p, i) => {
+        const x = this.mapFit.ox + p.x * s;
+        const y = this.mapFit.oz + p.z * s;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+    this.mapLayer = layer;
+    this.mapKey = pts;
+  }
+
+  private drawMap(pts: { x: number; z: number }[], car: { x: number; z: number }): void {
+    const ctx = this.map.getContext('2d');
+    if (!ctx || pts.length < 2) return;
+    if (this.mapKey !== pts || !this.mapLayer) this.buildMapLayer(pts);
     ctx.clearRect(0, 0, 120, 80);
-    ctx.strokeStyle = '#efeae2';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    pts.forEach((p, i) => {
-      const x = ox + p.x * s;
-      const y = oz + p.z * s;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+    ctx.drawImage(this.mapLayer!, 0, 0);
     ctx.fillStyle = '#ffb020';
     ctx.beginPath();
-    ctx.arc(ox + car.x * s, oz + car.z * s, 3, 0, Math.PI * 2);
+    ctx.arc(this.mapFit.ox + car.x * this.mapFit.s, this.mapFit.oz + car.z * this.mapFit.s, 3, 0, Math.PI * 2);
     ctx.fill();
   }
 }

@@ -1,10 +1,17 @@
-import { trainBaseRecipe } from '../rl/recipe';
-import type { Trainer } from '../rl/trainer';
+import { trainRecipe, type RecipeResult } from '../rl/recipe';
 
-let cached: Promise<{ trainer: Trainer; seconds: number }> | null = null;
+const cache = new Map<string, Promise<RecipeResult>>();
 
-/** One trained trainer shared by every eval section so training time is paid once. */
-export function sharedTrained(): Promise<{ trainer: Trainer; seconds: number }> {
-  cached ??= trainBaseRecipe();
-  return cached;
+/**
+ * One trained trainer shared by every eval section so training time is paid once.
+ * `quick` skips the PPO phase (imitation only) to shorten smoke runs.
+ */
+export function sharedTrained(quick = false): Promise<RecipeResult> {
+  const key = quick ? 'quick' : 'full';
+  let p = cache.get(key);
+  if (!p) {
+    p = trainRecipe(quick ? { ppoUpdates: 0 } : {});
+    cache.set(key, p);
+  }
+  return p;
 }

@@ -1,12 +1,7 @@
 import type { TrackSpec, Validation } from '../shared/types';
 import { buildTrackFromPoints, validateTrack } from '../track/build';
-import { dist, fromFloat, smoothStroke, toFloat, trimClosingTail, type V2 } from './stroke';
-
-/** Make closure explicit: the validator and the build read a repeated first point as "closed". */
-export function closeLoop(points: V2[], closed: boolean): V2[] {
-  if (!closed || points.length < 3) return points;
-  return [...points, { ...points[0]! }];
-}
+import { dist, fromFloat, toFloat, type V2 } from './stroke';
+import { processStroke } from './pipeline';
 
 export interface EditorOpts {
   width: number;
@@ -45,12 +40,7 @@ export class TrackEditor {
     this.ctx = ctx;
     canvas.addEventListener('pointerdown', (e) => this.onDown(e));
     canvas.addEventListener('pointermove', (e) => this.onMove(e));
-    canvas.addEventListener('pointerup', (e) => {
-      if (e.isPrimary) this.onUp();
-    });
-    // A cancelled touch or lost capture ends the stroke instead of leaving the editor mid-draw.
-    canvas.addEventListener('pointercancel', () => this.onUp());
-    canvas.addEventListener('lostpointercapture', () => this.onUp());
+    canvas.addEventListener('pointerup', () => this.onUp());
   }
 
   setSize(w: number, h: number, scale: number): void {
@@ -69,12 +59,6 @@ export class TrackEditor {
   }
 
   private onDown(ev: PointerEvent): void {
-    if (!ev.isPrimary) return;
-    try {
-      this.canvas.setPointerCapture(ev.pointerId);
-    } catch {
-      // Synthetic events have no active pointer to capture.
-    }
     const p = this.world(ev);
     if (this.mode === 'place') {
       this.points.push(p);
@@ -90,10 +74,15 @@ export class TrackEditor {
     this.drawing = true;
     this.raw = [p];
     this.points = [p];
+    // Keep receiving moves and the release if the pointer leaves the canvas mid-stroke.
+    try {
+      this.canvas.setPointerCapture(ev.pointerId);
+    } catch {
+      /* synthetic events have no active pointer to capture */
+    }
   }
 
   private onMove(ev: PointerEvent): void {
-    if (!ev.isPrimary) return;
     const p = this.world(ev);
     if (this.drag >= 0) {
       this.points[this.drag] = p;
@@ -118,19 +107,8 @@ export class TrackEditor {
     if (!this.drawing) return;
     this.drawing = false;
     if (this.raw.length < 3) return;
-    const a = this.raw[0]!;
-    const b = this.raw[this.raw.length - 1]!;
-    const closed = dist(a, b) < 1;
-    const candidates = [smoothStroke(this.raw, closed, this.halfWidth), closed ? trimClosingTail(this.raw) : this.raw.slice()];
-    this.points = closeLoop(candidates[0]!, closed);
-    for (const candidate of candidates) {
-      const closedPts = closeLoop(candidate, closed);
-      if (validateTrack(toFloat(closedPts), this.halfWidth).ok) {
-        this.points = closedPts;
-        break;
-      }
-      this.points = closedPts;
-    }
+    // Stroke -> RDP -> Chaikin x2 -> curvature limit -> straight start; see pipeline.ts.
+    this.points = processStroke(this.raw, this.halfWidth, this.mu).points;
     this.commit();
   }
 
@@ -159,8 +137,7 @@ export class TrackEditor {
     const flat = toFloat(this.points);
     const validation = this.points.length >= 3 ? validateTrack(flat, this.halfWidth) : { ok: false, issues: [{ reason: 'open' as const, at: [0, 0] as [number, number] }] };
     let track: TrackSpec | null = null;
-    // Only a valid drawing becomes a track, so "Train on this" can never receive a broken one.
-    if (validation.ok && this.points.length >= 4) {
+    if (this.points.length >= 4) {
       try {
         track = buildTrackFromPoints(flat, { halfWidth: this.halfWidth, mu: this.mu, source: 'user' });
       } catch {

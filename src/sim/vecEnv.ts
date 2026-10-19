@@ -2,17 +2,19 @@ import { ACT_DIM, OBS_DIM, type EpisodeConfig, type StepInfo, type TrackSpec } f
 import { CONTROL_DT } from '../shared/constants';
 import { makeRng, type RNG } from '../shared/rng';
 import { nearestSample } from '../track/sample';
-import { purePursuit } from '../track/baseline';
+import { newBaselineMemory, purePursuit, type BaselineController, type BaselineMemory, type BaselineOpts } from '../track/baseline';
 import { Vehicle } from './car/vehicle';
 import { defaultCarParams } from './car/params';
 import { RayField, fillObservation, wheelsOff } from './sensors';
 import { EpisodeBook, MAX_DS as MAX_PLAUSIBLE_DS, scoreStep } from './reward';
+import { getWallGrid, resolveWallContact, type WallGrid, type WallResult } from './wallGrid';
 
 interface Slot {
   car: Vehicle;
   track: TrackSpec;
   cfg: EpisodeConfig;
   rays: RayField;
+  grid: WallGrid;
   book: EpisodeBook;
   hint: number;
   prevS: number;
@@ -25,9 +27,11 @@ interface Slot {
   stepInLap: number;
   rng: RNG;
   delay: number[];
+  /** Last applied [steer, throttle]; mutated in place so a step allocates nothing. */
   action: [number, number];
   contact: boolean;
   returning: number;
+  mem: BaselineMemory;
 }
 
 function yawOf(tx: number, tz: number): number {
@@ -43,7 +47,8 @@ export function stepCapFor(trackLength: number, lapsTarget: number): number {
 const FLIP_ROLL = 0.85;
 
 /** Fresh track and episode config for a slot that just ended an episode. */
-export type EpisodeSampler = (slot: number) => { track: TrackSpec; cfg: EpisodeConfig };
+/** Track and config for a slot's next episode; null keeps the slot's current track and car. */
+export type EpisodeSampler = (slot: number) => { track: TrackSpec; cfg: EpisodeConfig } | null;
 
 export interface CarSnap {
   x: number;
@@ -75,6 +80,7 @@ export class VecEnv {
   readonly poseBuf: Float32Array;
   readonly infos: StepInfo[];
   private slots: Slot[] = [];
+  private readonly wallOut: WallResult = { contact: false, hit: false, impact: 0 };
   /** When set, every slot draws a new track and car config at each episode end (per-episode DR and track mixing). */
   sampler: EpisodeSampler | null = null;
   /** Episodes finished since the last consume. */
@@ -117,6 +123,7 @@ export class VecEnv {
         track,
         cfg,
         rays: new RayField(),
+        grid: getWallGrid(track.walls),
         book: new EpisodeBook(),
         hint: 0,
         prevS: 0,
@@ -130,6 +137,7 @@ export class VecEnv {
         action: [0, 0.4],
         contact: false,
         returning: 0,
+        mem: newBaselineMemory(),
       };
       slot.rays.setTrack(track);
       this.place(slot);
@@ -153,7 +161,10 @@ export class VecEnv {
     slot.stepInLap = 0;
     slot.contact = false;
     slot.returning = 0;
-    slot.action = [0, 0.4];
+    slot.mem.pinned = 0;
+    slot.mem.reversing = 0;
+    slot.action[0] = 0;
+    slot.action[1] = 0.4;
     slot.delay = [];
   }
 
@@ -247,7 +258,8 @@ export class VecEnv {
       info.wrongWay = wrong;
       info.stuck = scored.info.stuck;
       info.rewardRaw = scored.reward;
-      slot.action = [steer, throttle];
+      slot.action[0] = steer;
+      slot.action[1] = throttle;
       if (scored.done || scored.truncated) {
         this.finished.push({
           lap: slot.lap >= 1,
@@ -271,11 +283,12 @@ export class VecEnv {
   }
 
   private startNext(i: number, slot: Slot): void {
-    if (this.sampler) {
-      const next = this.sampler(i);
+    const next = this.sampler?.(i);
+    if (next) {
       if (next.track !== slot.track) {
         slot.track = next.track;
         slot.rays.setTrack(next.track);
+        slot.grid = getWallGrid(next.track.walls);
       }
       slot.cfg = next.cfg;
       slot.car = new Vehicle(next.cfg.car);
@@ -285,47 +298,9 @@ export class VecEnv {
 
   /** Cheap polyline resolution. Same wall geometry Rapier uses for the driven car. */
   private wallPush(slot: Slot): { hit: boolean; impact: number } {
-    const margin = 0.18;
-    let hit = false;
-    let impact = 0;
-    const near = slot.rays.gather(slot.car.px, slot.car.pz, margin + 0.5);
-    for (let k = 0; k < slot.rays.nearCount; k++) {
-      const seg = slot.rays.segs[near[k]!]!;
-      const x1 = seg.x1;
-      const z1 = seg.z1;
-      const dx = seg.x2 - x1;
-      const dz = seg.z2 - z1;
-      const len2 = dx * dx + dz * dz || 1;
-      let t = ((slot.car.px - x1) * dx + (slot.car.pz - z1) * dz) / len2;
-      t = Math.max(0, Math.min(1, t));
-      const cx = x1 + dx * t;
-      const cz = z1 + dz * t;
-      const ox = slot.car.px - cx;
-      const oz = slot.car.pz - cz;
-      const dist = Math.hypot(ox, oz);
-      if (dist < margin) {
-        hit = true;
-        const nx = ox / (dist || 1);
-        const nz = oz / (dist || 1);
-        slot.car.px += nx * (margin - dist);
-        slot.car.pz += nz * (margin - dist);
-        const cy = Math.cos(slot.car.yaw);
-        const sy = Math.sin(slot.car.yaw);
-        const worldVx = cy * slot.car.vx - sy * slot.car.vz;
-        const worldVz = sy * slot.car.vx + cy * slot.car.vz;
-        const vn = worldVx * nx + worldVz * nz;
-        if (vn < 0) {
-          const e = 0.3;
-          const wx = worldVx - (1 + e) * vn * nx;
-          const wz = worldVz - (1 + e) * vn * nz;
-          slot.car.vx = cy * wx + sy * wz;
-          slot.car.vz = -sy * wx + cy * wz;
-          impact = Math.max(impact, -vn);
-        }
-      }
-    }
-    slot.contact = hit;
-    return { hit: impact > 0.4, impact };
+    resolveWallContact(slot.car, slot.grid, this.wallOut);
+    slot.contact = this.wallOut.contact;
+    return this.wallOut;
   }
 
   private writeObs(i: number): void {
@@ -348,12 +323,17 @@ export class VecEnv {
     );
   }
 
-  baselineActions(): Float32Array {
+  /**
+   * Pure-pursuit actions for every car. No argument gives the imitation teacher exactly as before;
+   * pass BaselineOpts for the oracle variants, or a controller function to drive with something else.
+   */
+  baselineActions(ctl?: BaselineOpts | BaselineController): Float32Array {
     const out = new Float32Array(this.n * ACT_DIM);
     for (let i = 0; i < this.n; i++) {
       const slot = this.slots[i];
       if (!slot) continue;
-      const cmd = purePursuit(slot.car, slot.track, slot.hint);
+      const cmd =
+        typeof ctl === 'function' ? ctl(slot.car, slot.track, slot.hint) : purePursuit(slot.car, slot.track, slot.hint, ctl, slot.mem);
       slot.hint = cmd.hint;
       out[i * ACT_DIM] = cmd.steer;
       out[i * ACT_DIM + 1] = cmd.throttle;
@@ -409,5 +389,28 @@ export class VecEnv {
       vz: car.vz,
       surfaceMu: car.surfaceMu,
     };
+  }
+
+  swapTracks(tracks: TrackSpec[], cfgs: EpisodeConfig[]): void {
+    for (let i = 0; i < this.n; i++) {
+      const slot = this.slots[i];
+      if (!slot) continue;
+      slot.track = tracks[i % tracks.length]!;
+      slot.cfg = { ...cfgs[i % cfgs.length]!, trackId: slot.track.id };
+      slot.rays.setTrack(slot.track);
+      slot.grid = getWallGrid(slot.track.walls);
+    }
+  }
+
+  /** Point slot `i` at `track` and restart its episode there. The slot keeps its Vehicle. */
+  retargetSlot(i: number, track: TrackSpec, cfg: EpisodeConfig): void {
+    const slot = this.slots[i];
+    if (!slot) return;
+    slot.track = track;
+    slot.cfg = { ...cfg, trackId: track.id };
+    slot.rays.setTrack(track);
+    slot.grid = getWallGrid(track.walls);
+    this.place(slot);
+    this.writeObs(i);
   }
 }

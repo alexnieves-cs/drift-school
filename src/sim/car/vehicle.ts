@@ -1,9 +1,9 @@
 import type { CarParams, CarState } from '../../shared/types';
 import { G, WHEEL_RADIUS } from '../../shared/constants';
-import { applyArb, rideRest, springForce } from './suspension';
+import { applyArb, restHeight, springForce } from './suspension';
 import { aeroDrag, lagAlpha, motorTorque, rollingForce } from './drivetrain';
-import { ackermann, clamp, servoStep } from './steering';
-import { tireForces } from './tire';
+import { ackermannInto, clamp, servoStep } from './steering';
+import { tireForcesInto, type TireOut } from './tire';
 import type { WallWorld } from '../world';
 
 export interface PoseInit {
@@ -47,6 +47,11 @@ export class Vehicle {
   private readonly state: CarState;
   private readonly xs: number[];
   private readonly zs: number[];
+  // per-substep scratch, kept off the heap
+  private readonly ack = new Float64Array(2);
+  private readonly steers = new Float64Array(4);
+  private readonly forces = new Float64Array(4);
+  private readonly tire: TireOut = { Fx: 0, Fy: 0, slipAngle: 0, slipRatio: 0 };
 
   constructor(p: CarParams) {
     this.p = p;
@@ -127,15 +132,19 @@ export class Vehicle {
     const p = this.p;
     const target = steerCmd * p.steer.maxAngle + p.steer.offset;
     this.steer = servoStep(this.steer, target, p.steer.rate, dt);
-    const [dL, dR] = ackermann(this.steer, p.wheelbase, p.track);
-    const steers = [dL, dR, 0, 0];
+    ackermannInto(this.ack, this.steer, p.wheelbase, p.track);
+    const steers = this.steers;
+    steers[0] = this.ack[0]!;
+    steers[1] = this.ack[1]!;
+    steers[2] = 0;
+    steers[3] = 0;
 
     const driveCmd = throttle > 0 ? throttle : 0;
     const brakeCmd = throttle < 0 ? -throttle : 0;
     this.driveState += (driveCmd - this.driveState) * lagAlpha(dt, p.motor.tau);
 
-    const { rest } = rideRest(p.mass, p.susp.k, p.cgHeight, G);
-    const forces = [0, 0, 0, 0];
+    const rest = restHeight(p.mass, p.susp.k, p.cgHeight, G);
+    const forces = this.forces;
     for (let i = 0; i < 4; i++) {
       const yMount = this.py - this.pitch * this.xs[i]! + this.roll * this.zs[i]!;
       const cRaw = rest - yMount;
@@ -173,17 +182,19 @@ export class Vehicle {
         if (reverse) T = -brakeCmd * p.motor.torque * share;
         else T = motorTorque(this.omega[i]!, this.driveState, p.motor) * share;
       }
-      const tire = tireForces({
+      const tire = this.tire;
+      tireForcesInto(
+        tire,
         vLong,
         vLat,
-        omega: this.omega[i]!,
+        this.omega[i]!,
         fz,
-        mu0: p.tire.mu0 * muScale * this.surfaceMu,
-        loadSens: p.tire.loadSens,
-        B: pace.B,
-        C: pace.C,
-        E: pace.E,
-      });
+        p.tire.mu0 * muScale * this.surfaceMu,
+        p.tire.loadSens,
+        pace.B,
+        pace.C,
+        pace.E,
+      );
       const Tbrake = reverse ? 0 : brakeCmd * p.motor.torque * 2.2 * Math.sign(this.omega[i]! || vLong || 1);
       const dw = (T - Tbrake - tire.Fx * WHEEL_RADIUS) / WHEEL_I;
       const capped = clamp(dw * dt, -40, 40);
@@ -209,7 +220,7 @@ export class Vehicle {
 
     this.vx += (sumFx / p.mass + this.vz * this.wYaw) * dt;
     this.vz += (sumFz / p.mass - this.vx * this.wYaw) * dt;
-    this.vy += (forces.reduce((a, b) => a + b, 0) / p.mass - G) * dt;
+    this.vy += ((0 + forces[0]! + forces[1]! + forces[2]! + forces[3]!) / p.mass - G) * dt;
 
     let pitchSusp = 0;
     let rollSusp = 0;
