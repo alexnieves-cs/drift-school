@@ -532,8 +532,11 @@ export class ThreeRenderer implements Renderer {
   private noteTrail(h: HeroState): void {
     const len = this.trailLen;
     const px = this.trailPos;
-    if (len > 0 && (px[(len - 1) * 3]! - h.x) ** 2 + (px[(len - 1) * 3 + 2]! - h.z) ** 2 < 1e-4) return;
-    if (len >= TRAIL_PTS) {
+    const d2 = len > 0 ? (px[(len - 1) * 3]! - h.x) ** 2 + (px[(len - 1) * 3 + 2]! - h.z) ** 2 : Infinity;
+    if (d2 < 1e-4) return;
+    // A reset or a move to another pool track teleports the car; start a new trail instead of a line across the map.
+    if (len > 0 && d2 > 0.75 * 0.75) this.trailLen = 0;
+    if (this.trailLen >= TRAIL_PTS) {
       px.copyWithin(0, 3, TRAIL_PTS * 3);
       this.trailLen = TRAIL_PTS - 1;
     }
