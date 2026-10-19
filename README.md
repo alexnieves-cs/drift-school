@@ -81,9 +81,9 @@ flowchart LR
 1. **Observation.** 48 floats: 21 range rays, body-frame speeds, slip angles, wheel-load shares, the previous action, and track-relative features (offset, heading error, curvature ahead). Layout in [`src/sim/OBS_LAYOUT.md`](src/sim/OBS_LAYOUT.md).
 2. **Action.** Steer and throttle in [-1, 1]. Negative throttle brakes, then reverses.
 3. **Reward.** Progress along the centerline, lap and lap-time bonuses, minus penalties for leaving the track, hitting walls, jerky inputs, going the wrong way and wasting time.
-4. **Imitation first, then PPO.** From-scratch PPO at the throughput of CPU TF.js did not learn laps in minutes. So the trainer first clones the pure-pursuit controller onto the policy, warms up the critic, then runs PPO (clip 0.2, GAE, Adam 3e-4) on top. Read the reward curve after that as fine-tuning, not as learning from nothing.
+4. **Imitation first, then PPO.** From-scratch PPO at the throughput of CPU TF.js did not learn laps in minutes. So the training recipe (`src/rl/recipe.ts`) distils the pure-pursuit controller into the policy with DAgger, stage by stage from 0 to 3, under domain randomization and mixed surfaces. Then it runs a short PPO phase (critic warm-up, a tight clip, GAE) whose updates are reverted unless they help on held-out validation seeds. Nearly all of the driving skill comes from the imitation. Read the reward curve as fine-tuning, not as learning from nothing.
 5. **Curriculum.** Five stages, from a wide oval to narrow hairpins, with 20% replay of earlier stages.
-6. **Hot-swap.** "Train on this" queues the drawn track behind the running update, resets the environments onto a 70/30 pool of your track and procedural tracks, and forks the checkpoint. The trainer throws if the weight hash changes across a swap.
+6. **Hot-swap.** "Train on this" lets each car finish its running episode, then restarts it on your track (any car still mid-lap after 8 s is moved anyway). No gradient step runs during the swap, so the weight hash is unchanged. The fine-tune then mixes 70% your track and 30% procedural replay, and interleaves PPO updates with DAgger batches labelled by the pure-pursuit controller. The base checkpoint is saved and the new weights are forked under the track's hash.
 
 More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 

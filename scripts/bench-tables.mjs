@@ -55,8 +55,23 @@ if (race) {
 
 const draw = read('draw-run.json');
 if (draw) {
-  const texts = draw.adaptation.map((a) => a.text).filter((t) => t.startsWith('drawn track'));
+  const panels = draw.adaptation.filter((a) => a.panel?.phase && a.panel.phase !== 'idle');
+  const last = panels.at(-1)?.panel;
+  const firstTune = panels.find((a) => a.panel.phase === 'tune');
+  const pct = (x) => (x === undefined ? 'not reached' : `${Math.round(Number(x) * 100)}%`);
   out.push('### Draw a track and train on it (`node scripts/record-demos.mjs draw`)', '');
-  out.push(`Editor verdict: \`${draw.editor}\`. Last adaptation readout in the run: \`${texts.at(-1) ?? 'none'}\`.`, '');
+  out.push(`Editor verdict: \`${draw.editor}\`.`, '');
+  if (last) {
+    table(['Measure', 'Value'], [
+      ['Swap latency (click to every env on the drawn track)', last.latencyMs ? `${(Number(last.latencyMs) / 1000).toFixed(1)} s` : 'not reached'],
+      ['Weights unchanged at swap', last.unchanged ?? 'not reported'],
+      ['Zero-shot completion (no update yet)', pct(last.zeroShot)],
+      ['Fine-tuning started after', firstTune ? `${firstTune.t} s` : 'not reached'],
+      [`Completion on the drawn track at ${panels.at(-1).t} s`, pct(last.completion)],
+      ['Best lap on the drawn track', last.bestLap ? `${last.bestLap} s` : 'none'],
+      ['Learner steps since the swap', last.steps ?? '0'],
+    ]);
+    out.push(`Last panel text: \`${last.text}\`.`, '');
+  }
 }
 console.log(out.join('\n'));

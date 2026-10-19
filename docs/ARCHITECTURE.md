@@ -42,8 +42,8 @@ Differences from the SPEC diagram:
 | `src/shared` | Contracts: `TrackSpec`, `CarParams`, `CarState`, `GenStat`, message types, the sfc32 RNG with `fork(label)`, constants, and the weight hash. |
 | `src/track` | Seeded generator, spline and resampling, validator, `buildTrackFromPoints`, pure-pursuit baseline. |
 | `src/sim/car` | Tire, suspension, drivetrain, steering, and the `Vehicle` that integrates them. |
-| `src/sim` | `VecEnv`, ray sensors, reward and termination, domain randomization, Rapier wall world. |
-| `src/rl` | Policy and value networks, PPO, curriculum, track mix, generation stats, checkpoints. |
+| `src/sim` | `VecEnv`, ray sensors with a wall grid for culling, reward and termination, domain randomization, Rapier wall world. |
+| `src/rl` | Policy and value networks, PPO, the training recipe (DAgger, then validation-gated PPO), hot-swap fine-tune, curriculum, track mix, seed sets, generation stats, checkpoints. |
 | `src/editor` | Stroke cleanup (RDP, Chaikin), the drawing overlay, URL-hash sharing. |
 | `src/viz` | Renderer, track mesh, interpolation, and the three cameras. |
 | `src/ui` | Controls, leaderboard, uPlot charts, telemetry, heatmaps. |
@@ -83,11 +83,11 @@ Reward and termination live in `src/sim/reward.ts`: progress along the centerlin
 
 The network is an MLP, 48→128→128 with tanh, a mean head for the two actions with a learned log-std, and a separate value network of the same size. PPO uses GAE (λ 0.95, γ 0.99), a 0.2 clip, Adam at 3e-4, advantage normalization and an entropy bonus.
 
-**Imitation warm start.** Before the first PPO update the trainer regresses the policy's mean action toward the pure-pursuit controller on the current track pool (`Trainer.imitate`), then runs a few critic-only updates so a random value head cannot wreck it. From-scratch PPO at the throughput of CPU TF.js did not learn laps in a few minutes, so every run starts from that cloned policy. See [BENCHMARKS.md](BENCHMARKS.md) for what training does after that.
+**Training recipe.** `trainRecipe` in `src/rl/recipe.ts` is the one function the app runs and `npm run eval` measures. It has two phases. First, DAgger (`src/rl/dagger.ts`) distils the pure-pursuit controller into the policy, stage by stage from 0 to 3, over stage-appropriate track pools with domain randomization off, low and high and mixed asphalt, carpet and dirt. Second, a short PPO fine-tune: critic warm-up, small learning rate, tight clip and gradient-norm clip, with every update reverted if it scores worse on held-out validation seeds (`src/rl/validate.ts`). Essentially all of the driving skill comes from the first phase; PPO moves lap time by about 1% at this budget. Training, validation and eval seeds never overlap (`src/rl/seeds.ts`), and the same seed gives identical weights. The browser runs the same recipe with a shorter schedule (`BROWSER_TUNE`), then keeps running PPO. See [ACCEPTANCE.md](ACCEPTANCE.md) for what the eval shows about each phase.
 
 **Curriculum.** Five stages (`src/rl/curriculum.ts`) with a promotion rule on recent completion and, at stage 2, lap time against `tRef`. Stage sampling replays earlier stages 20% of the time.
 
-**Track mix and hot-swap.** `TrackMix` holds a weighted pool. "Train on this" posts `setTrackPool` with the drawn control points; the learner waits for the current update to finish (messages that change the trainer are queued, so a rollout never straddles a swap), builds the track, queues a pool of the drawn track plus the procedural ones with `fineTune: true`, and resets the envs onto it. Fine-tune mode weights the pool 70% drawn and 30% procedural, raises the entropy coefficient to 0.02 for 20 updates and restarts the learning rate at 3e-4. `Trainer.forceSwap` throws if the weight hash changes across a swap, and the checkpoint is forked to `user-<hash>` in IndexedDB so the base model survives.
+**Track mix and hot-swap.** "Train on this" posts `setTrackPool` with the drawn control points. Messages that change the trainer are deferred until the running update ends, so a rollout never straddles a swap. The learner snapshots the pre-swap model and starts a `FineTune` (`src/rl/finetune.ts`), which runs in three phases. In *drain*, each env finishes its running episode and then restarts on the drawn track; an env still mid-episode after 8 s is moved anyway. No gradient step runs, so the weight hash is unchanged. In *zero-shot*, the first episodes on the drawn track run with no update, and their completion rate is reported. In *tune*, the pool becomes 70% drawn track and 30% procedural replay (`TrackMix`: entropy 0.02 for 20 updates, learning-rate warm restart), and each PPO update is followed by DAgger batches labelled by the pure-pursuit controller. The base model is saved and the new weights are forked to `user-<hash>` in IndexedDB. The page shows the progress in an adaptation panel.
 
 ## Rendering
 
@@ -104,5 +104,5 @@ A drawn track is stored in the URL hash: the control points are quantized to mil
 1. `src/shared/types.ts` for the contracts.
 2. `src/sim/car/vehicle.ts` and `src/sim/car/tire.ts` for the physics.
 3. `src/sim/vecEnv.ts`, `src/sim/reward.ts` and `src/sim/sensors.ts` for the environment.
-4. `src/rl/trainer.ts` for the training loop.
+4. `src/rl/recipe.ts`, `src/rl/trainer.ts` and `src/rl/finetune.ts` for training and the hot-swap.
 5. `src/workers/learner.worker.ts` and `src/main.ts` for how the pieces are wired in the browser.
