@@ -17,7 +17,7 @@ The clip above is a timelapse of the live app: a track drawn with the mouse, val
 
 | | |
 | --- | --- |
-| **Vehicle physics** | 1:10 RC car. Pacejka-lite tires with load-sensitive grip and a friction ellipse, 4-corner suspension, weight transfer, 4WD or RWD, motor lag. 0.024 ms per control step. |
+| **Vehicle physics** | 1:10 RC car. Pacejka-lite tires with load-sensitive grip and a friction ellipse, 4-corner suspension, weight transfer, 4WD or RWD, motor lag. 0.016 ms per control step. |
 | **Procedural tracks** | A seeded generator (jittered hull, displacement, Catmull-Rom spline) in five difficulty stages. Same seed, same track, byte for byte. |
 | **Draw-a-track editor** | Freehand stroke, simplified and smoothed, checked live for self-intersection, tight radius, short length and overlap, with the reason and the location. |
 | **Hot-swap and fine-tune** | 70% your track, 30% procedural, a temporary entropy bump, and a forked checkpoint so the base model survives. |
@@ -46,16 +46,16 @@ Every number comes from a script in this repository. [docs/BENCHMARKS.md](docs/B
 
 | What | Result | Script |
 | --- | --- | --- |
-| Stage-0 lap completion, held-out seeds, headless | 100% (16/16) in 5 s | `npm run eval` |
-| Vehicle step, 10 substeps | 0.024 ms median (budget 0.15 ms) | `npm run perf` |
-| Vectorized env, 64 cars, one process | about 11,000 car-steps/s | `npm run perf` |
-| Track generation / validation | 1.2 ms / 0.9 ms median | `npm run perf` |
+| Stage-0 lap completion, held-out seeds, headless | 100% (16/16) after 20 s; the full stage 0-3 recipe also 100% at 67 s | `npm run eval` |
+| Vehicle step, 10 substeps | 0.016 ms median (budget 0.15 ms) | `npm run perf` |
+| Vectorized env, 64 cars, one process, no policy in the loop | about 39,000 car-steps/s | `npm run perf` |
+| Track generation / validation | 1.1 ms / 0.7 ms median | `npm run perf` |
 | Pure-pursuit lap, hairpin, dry / ice | 16.4 s / 22.6 s | `scripts/record-demos.mjs hairpin` |
-| Hot-swap onto a drawn S-curve: weights unchanged, completion after 2 min, no forgetting | hash equal; 100% (16/16), zero-shot 100%; procedural 100% retained | `npm run eval` |
+| Hot-swap onto a drawn S-curve: every env moved, weights unchanged, completion after 2 min, no forgetting | 1.8 s for 16/16 envs; hash equal; 100%; procedural 100% retained | `npm run eval` |
 | Surface x randomization matrix (8 seeds x asphalt, carpet, dirt x DR low, high) | 99% (143/144) | `npm run eval` |
-| 64 ghost cars at 50 fps | not measured, needs a GPU (software GL gives about 7 fps) | `npm run eval` prints `skip` |
+| 64 ghost cars while 64 train, software GL, no GPU | Low preset 60 fps median, High 22 fps (bar 50: fails here) | `npm run eval` |
 
-Measured in a 4-vCPU Linux container with software rendering. Frame rate on a real GPU is not in this table. The full line-by-line acceptance status, including what is weak evidence, is in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md).
+Measured in a 4-vCPU Linux container with software rendering. Frame rate on a real GPU is not in this table, and the High preset has not been measured on one. The full line-by-line acceptance status, including what is weak evidence, is in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md).
 
 ## How training works
 
@@ -122,12 +122,12 @@ Useful URLs: `/?cars=64` for the 64-car view, `/?view=ghosts` for a scripted gho
 
 ## Honest limits
 
-- Training does not start from scratch. It starts from a pure-pursuit clone, so "learned to race" here means "fine-tuned a cloned driver", and the stage-0 completion above is mostly the clone's doing.
+- Training does not start from scratch. The policy is distilled from the pure-pursuit controller, so "learned to race" here means "imitated a hand-written driver, then fine-tuned", and the completion numbers above are mostly the imitation's doing.
 - Drift is not demonstrated on a track. In the physics test, with rear grip scaled to 0.8 the car holds a sustained slide (42 to 46 degrees of rear slip) and recovers when the steering is released. With rear grip at 0.5 it spins out. That is a slide, not a controlled drift, and no controller here drives one around a corner.
 - In the multi-car view the cars train on a pool of four generated tracks but only one track is drawn, so some ghosts look like they are driving off the road. They are on a track you cannot see.
-- Throughput is one process. The spec's four-worker `SharedArrayBuffer` farm and 20k steps/s are not built.
+- Throughput is one process. The spec's four-worker `SharedArrayBuffer` farm is not built. The bare environment steps about 39,000 car-steps/s, but with the TF.js policy and PPO update in the loop training runs far slower than that.
 - The renderer has WebGPU and WebGL2 paths and a Low and a High preset. In headless software GL the High preset rendered a black frame, so every clip uses Low. GTAO, TAA, cascaded shadows and bloom from the spec are not implemented.
-- The ghost-car frame rate is not measured, because the only browser here has no GPU. The eval table's matrix and hot-swap rows run in Node with the cloned-then-fine-tuned policy, so they show it holds up across surfaces and swaps, not that it learned them.
+- Frame rates were measured only under software GL, where the High preset reaches 22 fps against a 50 fps bar and stalls the main thread. Nobody has measured it on a GPU yet. The eval's matrix and hot-swap rows run in Node with the imitation-trained policy, so they show it holds up across surfaces and swaps, not that reinforcement learning discovered how to drive.
 
 ## Credits
 
