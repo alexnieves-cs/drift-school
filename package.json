@@ -16,7 +16,8 @@
     "lint": "eslint .",
     "bench": "vitest run --config vitest.bench.config.ts",
     "eval": "vite-node scripts/eval.ts --",
-    "media": "vite-node scripts/media.mjs"
+    "media": "vite-node scripts/media.mjs",
+    "perf": "vite-node scripts/measure-perf.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.14.0",

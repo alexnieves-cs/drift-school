@@ -1,145 +1,142 @@
 # drift-school
 
-Draw a racetrack with the mouse and watch small RC cars learn to race it in the browser. Tire slip, suspension and weight transfer are simulated in TypeScript. A PPO policy, warm-started from a pure-pursuit teacher, trains in a worker next to the page. Rendering is Three.js (WebGPU when the browser allows it, WebGL2 otherwise). Nothing needs a server.
+**Draw a racetrack with your mouse and watch a swarm of tiny RC cars learn to drive it. In your browser. No server.**
 
-![Training view](docs/media/train.png)
+[![ci](https://github.com/alexnieves-cs/drift-school/actions/workflows/ci.yml/badge.svg)](https://github.com/alexnieves-cs/drift-school/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Setup
+![Drawing a track, hot-swapping it into training, and the cars lapping it](docs/media/demo-draw-hairpin.gif)
 
-```bash
-npm install
-npm run dev
-```
+**[Live demo](https://alexnieves-cs.github.io/drift-school/)** · [Architecture](docs/ARCHITECTURE.md) · [Benchmarks](docs/BENCHMARKS.md) · [Acceptance status](docs/ACCEPTANCE.md) · [Spec](SPEC.md) · sibling project: [frontier-fly](https://github.com/alexnieves-cs/frontier-fly)
 
-Open http://127.0.0.1:5173 . The dev server sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. GitHub Pages cannot set those headers, so `public/coi-serviceworker.js` rewrites responses and reloads once. The Pages workflow uses `base: './'` and no repository secrets.
+The cars run on a vehicle model written for this project: Pacejka tires, four spring-damper suspensions with real weight transfer, a motor curve and a rate-limited steering servo, stepped at 500 Hz. A PPO policy trains in a Web Worker beside it, rendering is Three.js (WebGPU when the browser offers it, WebGL2 otherwise), and everything is deterministic from a seed. Draw a loop, press **Train on this**, and the new track is hot-swapped into the running training session without touching the weights.
 
-```bash
-npm test           # unit tests (61)
-npm run lint
-npm run typecheck
-npm run build
-npm run bench      # wall-clock budgets (warm JIT, best of 7). Noisy on shared machines; PERF_SLACK=3 loosens them
-npm run eval       # the SPEC section 3 acceptance table, measured. About 13 minutes (--quick, --only=stage0,matrix,hotswap,fps,physics)
-npm run test:e2e   # Playwright: COOP/COEP, ghost view, editor, M3 and M4 browser checks
-npm run media      # retake docs/media (needs `npm run dev` running)
-```
+The clip above is a timelapse of the live app: a track drawn with the mouse, validated in 8 ms, swapped into training, then lapped. Its source is in [`scripts/record-demos.mjs`](scripts/record-demos.mjs).
 
-Playwright downloads its own Chromium (`npx playwright install chromium`). To reuse a system Chromium, set `PW_CHROMIUM_PATH`. Software GL renders about 7 fps, so the e2e frame-rate floor is `E2E_MIN_FPS` (30 by default, 3 in CI); `E2E_STRICT_PERF=1` asserts the SPEC frame-rate and long-task bars on a machine with a GPU.
+## What's in it
 
-Keyboard driving, with Rapier walls, is at http://127.0.0.1:5173/dev/drive.html .
-
-## Controls
-
-| Input | Action |
+| | |
 | --- | --- |
-| 1 / 2 / 3 | Top-down, chase, in-car POV |
-| Draw | Freehand overlay. Release to simplify (RDP + Chaikin). Auto-closes if the ends are within 1 m |
-| Train on this | Hot-swap. Every env restarts on the drawn track at once (the SPEC lets running episodes finish first; this does not wait). Then 70% drawn track, 30% procedural for the fine-tune, entropy 0.02. The live weights are forked under the track id, and the base checkpoint is saved first |
-| Pause, baseline | Freeze learning, or watch pure pursuit |
-| Stage, grip, mass, DR | Curriculum override and domain-randomization knobs |
-| Save / load | Checkpoint in memory and IndexedDB |
-| Leaderboard row | One row per update. Click to replay that update's stored pose tape (the first car only) |
-| WASD or arrows | Only on the drive page |
+| **Vehicle physics** | 1:10 RC car. Pacejka-lite tires with load-sensitive grip and a friction ellipse, 4-corner suspension, weight transfer, 4WD or RWD, motor lag. 0.016 ms per control step. |
+| **Procedural tracks** | A seeded generator (jittered hull, displacement, Catmull-Rom spline) in five difficulty stages. Same seed, same track, byte for byte. |
+| **Draw-a-track editor** | Freehand stroke, simplified and smoothed, checked live for self-intersection, tight radius, short length and overlap, with the reason and the location. |
+| **Hot-swap and fine-tune** | 70% your track, 30% procedural, a temporary entropy bump, and a forked checkpoint so the base model survives. |
+| **Live training view** | 64 instanced ghost cars, a generation leaderboard you can click to replay, uPlot charts, wheel-load telemetry and a speed heatmap. |
+| **Three cameras** | Top-down, wall-aware chase, and an in-car POV with a HUD. Keys 1, 2, 3. |
+| **Shareable tracks** | A drawn track lives in the URL hash, quantized to millimetres. |
+| **Headless sim** | The sim, tracks and RL code never import Three.js or the DOM, and ESLint enforces it. `npm run eval` trains and scores in Node. |
 
-A track in the URL hash is `deflate` of quantized millimeters. Round-trip error is at most 1 mm.
+## The five demo moments, and what the clips show
 
-Query flags: `?view=ghosts` (64 cars, no training), `?cam=pov`, `?inline=1` (train on the main thread), `?quiet=1`, `?quality=high`.
+The [spec](SPEC.md) lists five moments to show off. This table says which are real today. Clips are made by a script from the running app, and the numbers behind them are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
-## Architecture
+| # | Moment | Clip | Status |
+| --- | --- | --- | --- |
+| 1 | 64 cars learn to lap | [GIF](docs/media/demo-race.gif) · [MP4](docs/media/demo-race.mp4) | **Partly.** 64 cars train live and lap generated tracks. They do not spin out first and then learn: the policy is first distilled from the pure-pursuit controller (see below). |
+| 2 | Generation-best lap time drops | same clip | **No.** In the recorded run the best lap per update stayed flat over 182 updates: a median of 8.8 s in the first five lap-finishing updates and 9.1 s in the last five. The 40 s to 14 s story in the spec is not shown. |
+| 3 | Draw a hairpin, hot-swap, re-learn | [GIF](docs/media/demo-draw-hairpin.gif) · [MP4](docs/media/demo-draw-hairpin.mp4) | **Hot-swap yes, re-learning partly.** The drawn track is validated, every car is on it 1.6 s after the click, and the weight hash is unchanged. The cars complete 100% of laps on it before any update, so there is no crash-and-relearn phase. The best lap on it falls from 13.7 s to 12.1 s over three minutes of fine-tuning. |
+| 4 | In-car POV, countersteer drift | [GIF](docs/media/demo-hairpin-pov.gif) · [MP4](docs/media/demo-hairpin-pov.mp4) | **POV yes, drift no.** The POV camera and HUD are real, driving a real vehicle model through a hairpin. A controlled drift with countersteer on a track is not demonstrated. |
+| 5 | Dry to ice, brakes earlier, still finishes | [POV](docs/media/demo-hairpin-pov.gif) · [chase](docs/media/demo-hairpin-chase.gif) | **Real, with the baseline driver.** The pure-pursuit controller laps the same hairpin dry (16.4 s) and on ice (22.6 s, top speed 5.0 vs 5.6 m/s). The learned policy is not driving in this clip. |
+
+![Chase camera, dry lap then ice lap](docs/media/demo-hairpin-chase.gif)
+
+## Benchmarks
+
+Every number comes from a script in this repository. [docs/BENCHMARKS.md](docs/BENCHMARKS.md) has the commands, the machine, and the rows that are not measured yet.
+
+| What | Result | Script |
+| --- | --- | --- |
+| Stage-0 lap completion, held-out seeds, headless | 100% (16/16) after 20 s; the full stage 0-3 recipe also 100% at 67 s | `npm run eval` |
+| Vehicle step, 10 substeps | 0.016 ms median (budget 0.15 ms) | `npm run perf` |
+| Vectorized env, 64 cars, one process, no policy in the loop | about 39,000 car-steps/s | `npm run perf` |
+| Track generation / validation | 1.1 ms / 0.7 ms median | `npm run perf` |
+| Pure-pursuit lap, hairpin, dry / ice | 16.4 s / 22.6 s | `scripts/record-demos.mjs hairpin` |
+| Hot-swap onto a drawn S-curve: every env moved, weights unchanged, completion after 2 min, no forgetting | 1.8 s for 16/16 envs; hash equal; 100%; procedural 100% retained | `npm run eval` |
+| Surface x randomization matrix (8 seeds x asphalt, carpet, dirt x DR low, high) | 99% (143/144) | `npm run eval` |
+| 64 ghost cars while 64 train, software GL, no GPU | Low preset 60 fps median, High 22 fps (bar 50: fails here) | `npm run eval` |
+
+Measured in a 4-vCPU Linux container with software rendering. Frame rate on a real GPU is not in this table, and the High preset has not been measured on one. The full line-by-line acceptance status, including what is weak evidence, is in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md).
+
+## How training works
 
 ```mermaid
 flowchart LR
   subgraph Main[Main thread]
-    UI[UI / Controls / Leaderboard] --> R[Three.js Renderer]
-    Ed[Track Editor] -->|TrackSpec| UI
-    R --> Cams[POV+HUD / Chase / Top-down]
-    UI --> Charts[uPlot + Heatmaps + Telemetry]
+    UI[Controls, leaderboard, charts] --> R[Three.js renderer]
+    Ed[Track editor] -->|control points| UI
+    R --> Cams[Top-down / chase / POV + HUD]
   end
-  subgraph LearnW[Learner worker]
-    Pol[TF.js Policy] --> PPO[PPO Update]
-    Car[Vectorized vehicles] --> Sens[Rays + reward]
-    Sens --> PPO
+  subgraph Learner[Learner worker]
+    Gen[Track generator + pool] --> Env[VecEnv: vehicles, rays, reward]
+    Env -->|obs, reward, done| PPO[PPO update, TF.js]
+    PPO -->|actions| Env
+    Cur[Curriculum + TrackMix] --> Gen
   end
-  LearnW -- ghost poses --> R
-  LearnW -- metrics --> UI
-  UI -- user track --> LearnW
+  Learner -- ghost poses ~30 Hz --> R
+  Learner -- GenStat per update --> UI
+  UI -- setTrackPool, setDR, setStage --> Learner
+  Learner -- checkpoints --> IDB[(IndexedDB)]
 ```
 
-The learner worker owns both the rollout and the update. `src/workers/env.worker.ts` can step a `VecEnv` on its own. There is not a four-worker SharedArrayBuffer pool.
+1. **Observation.** 48 floats: 21 range rays, body-frame speeds, slip angles, wheel-load shares, the previous action, and track-relative features (offset, heading error, curvature ahead). Layout in [`src/sim/OBS_LAYOUT.md`](src/sim/OBS_LAYOUT.md).
+2. **Action.** Steer and throttle in [-1, 1]. Negative throttle brakes, then reverses.
+3. **Reward.** Progress along the centerline, lap and lap-time bonuses, minus penalties for leaving the track, hitting walls, jerky inputs, going the wrong way and wasting time.
+4. **Imitation first, then PPO.** From-scratch PPO at the throughput of CPU TF.js did not learn laps in minutes. So the training recipe (`src/rl/recipe.ts`) distils the pure-pursuit controller into the policy with DAgger, stage by stage from 0 to 3, under domain randomization and mixed surfaces. Then it runs a short PPO phase (critic warm-up, a tight clip, GAE) whose updates are reverted unless they help on held-out validation seeds. Nearly all of the driving skill comes from the imitation. In the browser the recipe runs for stage 0 only on a shorter schedule, then plain PPO keeps running. Read the reward curve as fine-tuning, not as learning from nothing.
+5. **Curriculum.** Five stages, from a wide oval to narrow hairpins, with 20% replay of earlier stages.
+6. **Hot-swap.** "Train on this" lets each car finish its running episode, then restarts it on your track (any car still mid-lap after 8 s is moved anyway). No gradient step runs during the swap, so the weight hash is unchanged. The fine-tune then mixes 70% your track and 30% procedural replay, and interleaves PPO updates with DAgger batches labelled by the pure-pursuit controller. The base checkpoint is saved and the new weights are forked under the track's hash.
 
-Physics runs at 500 Hz inside each 50 Hz control step. Observations are 48 floats (21 rays plus speed, slip, and track-relative features). Actions are steer and throttle in [-1, 1].
+More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Acceptance tests (SPEC section 3)
+## Run it
 
-Measured on this machine (Linux container, Node 22, CPU TF.js, software GL). `npm run eval` regenerates the eval rows; the rest come from `npm test`, `npm run bench` and `npm run test:e2e`.
+Node 22 and npm.
 
-| | Check | Bar | Result |
-| --- | --- | --- | --- |
-| M0 | `tsc --noEmit`, RNG determinism, worker ping, COOP/COEP | pass | **measured-pass** (typecheck in CI, unit tests, e2e header test) |
-| M1 | Track generator: 1000 seeds x stages 0-4 valid, no fallback, same seed gives byte-identical output | all valid | **measured-pass** (5000 tracks, 0 fallbacks) |
-| M1 | Generate under 20 ms; validate under 16 ms | budget | **measured-pass** in `npm run bench` (best-of-7, warm) |
-| M1 | Known-bad fixtures rejected with the right reason; good fixtures pass | pass | **measured-pass** |
-| M1 | Car: understeer sign, step-steer overshoot, launch top speed within 5%, determinism, 1e6 random steps without NaN | pass | **measured-pass** |
-| M1 | Car step under 0.15 ms | 0.15 ms | **measured-pass**: full env step (10 substeps, 21 rays) is about 0.08 ms per car warm, one process |
-| M1 | Braking from 5 m/s moves at least 10% of load to the front | 10% | **measured-pass** |
-| M1 | Drift: rear slip above 15 degrees under low rear grip, recovers with countersteer | 15 deg | **measured-pass, with a caveat.** With rear grip scaled to 0.8 the car holds 42-46 degrees of rear slip at about 4 m/s and recovers to under 8 degrees when the steering is released. With rear grip at 0.5 it spins out (more than two full turns). The scripted recovery is "release the steer", not a countersteer controller, and it is a sustained slide, not a tuned drift |
-| M2 | PPO solves the toy env | pass | **measured-pass** |
-| M2 | Stage 0 lap completion at least 80% within 3 min, headless | 80% | **measured-pass**: 100% (16/16) on held-out seeds 101-116 after 27 s (stage-0 snapshot); the whole recipe through stage 3 also scores 100% at 89 s. Seeded, so it repeats run to run. See below: the skill is DAgger imitation of pure pursuit, not learning from scratch |
-| M2 | Baseline car finishes all generated stage 0-2 tracks | pass | **measured-pass** (`tests/track/baseline.test.ts`) |
-| M3 | 64 ghost cars at 50 fps or better | 50 fps | **measured-fail on software GL, not run on a GPU.** With the learner running 64 cars: Low preset 58.4 fps median (bar 60), High 15.8 fps (bar 50), SwiftShader on 4 shared cores. The hardware-independent part passes: JS per frame 0.8 ms mean on Low and 1.6 ms on High, 13-16 draw calls, under 10k triangles (64 cars are one instanced draw) |
-| M3 | Leaderboard rows equal updates | equal | **measured-pass** (browser: rows shown equal rows counted, no gaps) |
-| M3 | Clicking a row replays a deterministic ghost lap | pass | **measured-pass**: the row replays the stored pose tape (first car only). The replay is a recording, so it is deterministic by construction; replaying a lap by re-simulating it is not implemented |
-| M3 | No main-thread long task over 50 ms | 0 | **measured-fail on software GL**: Low 1 task (55 ms) in 24 s, High 375 (worst 124 ms). They are the compositor waiting on SwiftShader, not JS (JS stays under 10 ms per frame). Not measured on a GPU |
-| M4 | Draw an S-curve with the mouse, valid | valid | **measured-pass** (Playwright mouse path) |
-| M4 | Hot-swap: every env on the new track within 15 s | 15 s | **measured-pass**: 2.6 s headless with 16 of 16 envs, each finishing its running episode first (any env still mid-episode at 8 s is moved anyway); under 15 s in the browser test with 8 of 8 envs |
-| M4 | Weights unchanged at swap | hash equal | **measured-pass** (browser and eval) |
-| M4 | After 2 min, completion on the drawn track at least 80% | 80% | **measured-pass, but weak evidence**: 100% after 126 s, and 100% before any fine-tuning, because the imitation policy already drives this S-curve. Under low DR the same track goes from 8% to 100%. It mostly shows the fine-tune does not hurt |
-| M4 | Procedural completion stays at 90% or more of its pre-swap value | 90% | **measured-pass**: 100% retained on 16 held-out seeds and on 24 replay-pool seeds (100% before, 100% after) |
-| M4 | URL hash round-trips the track | same track | **measured-pass** (to 1 mm) |
-| M5 | Eval matrix (held-out seeds x asphalt, carpet, dirt x DR low, high) at least 70% | 70% | **measured-pass**: 99% (143/144) on pre-registered stage 2 tracks, seeds 201-212, 2 DR draws per cell. Worst cell dirt/high at 96%. Stage 1 99%, stage 3 99% (dirt/high 92%), for information |
-| M5 | POV, chase and top-down switch in under one frame | 1 frame | **not-run** |
-| M5 | HUD values match state | match | **not-run** (HUD is fed from the same snapshot; not asserted) |
-| M5 | High-preset fps budget | per spec | **not-run on a GPU** |
+```bash
+npm ci
+npm run dev       # http://127.0.0.1:5173
+```
 
-The matrix and the M2 number come from one seeded recipe run that trains through stages 0-3 under domain randomization and mixed surfaces. Eval seeds never overlap training seeds (`src/rl/seeds.ts`). Stage 4 is generated and validated but not trained. The full eval took 13 minutes here.
+```bash
+npm test          # unit tests
+npm run lint
+npm run build
+npm run eval      # the acceptance table from SPEC section 3
+npm run perf      # warmed-up throughput numbers
+npm run bench     # perf budget checks
+npm run test:e2e  # Playwright, needs a WebGL-capable Chromium
+```
 
-## What the learning actually does
+The dev server sends the COOP and COEP headers that `SharedArrayBuffer` needs. GitHub Pages cannot, so `public/coi-serviceworker.js` rewrites responses and the page reloads once.
 
-- **Recipe.** `src/rl/recipe.ts` distils the pure-pursuit car with DAgger, stage by stage (0 to 3), under domain randomization and mixed asphalt/carpet/dirt, then runs a short validation-gated PPO phase (critic warm-up, clipped PPO, GAE with lambda 0.95 and gamma 0.99, tanh-Gaussian policy). Nearly all of the driving skill comes from the imitation; PPO moves lap time by about 1% at this budget and its updates are reverted unless they help on validation seeds (`NOTES/rl.md`). Stage 0 does not learn laps from a random policy at this training rate, so read the reward chart as fine-tuning, not as proof of from-scratch learning.
-- **Hot-swap fine-tune.** Each env finishes its episode, then restarts on the drawn track; training is DAgger on the user track and a 30% procedural replay, interleaved with PPO (`NOTES/swap.md`).
-- **Throughput.** The env steps at roughly 17k car-steps/s in one process after the wall grid (`NOTES/phys.md`); with the TF.js PPO update in the loop it is far slower. There is no SharedArrayBuffer worker pool, so the SPEC's 20k steps/s on 4 workers is not claimed.
-- **Ghosts.** The worker streams car poses at about 30 Hz and the page draws them every animation frame. `?view=ghosts` is a synthetic 64-car demo with no training behind it.
-- **Reproducibility.** Training is seeded end to end: a seed gives identical weights (`tests/rl/stage0.test.ts`), and eval seeds never overlap training seeds (`src/rl/seeds.ts`).
-- **Reference time.** `tRef` on a generated track is an analytic curvature speed profile, not a simulated lap.
-- **Walls.** Cars in the vectorized env bounce off wall polylines with a restitution impulse. Rapier is used only on the drive page.
-
-## Known gaps
-
-- The policy acts at 50 Hz, not the SPEC's 25 Hz.
-- The replay tape records the first car only. Trainer replay tapes are kept in memory for the whole session.
-- No track-width slider or surface brush in the editor; the drawn track has one width and one friction.
-- The flip check is a roll-angle proxy at 0.85 rad (the vehicle model clamps roll at 0.9, so the SPEC's 80 degrees is unreachable).
-- Drift is a sustained slide, not a controlled drift (see M1 above).
-- `src/shared/messages.ts` documents intent; the worker wire protocol is the ad hoc messages in `main.ts` and `learner.worker.ts`. `src/workers/env.worker.ts` is not used by the page.
-- Gates are generated but not used. The heatmap's crash definition differs from the leaderboard's.
-- `sampleAtS` is a linear scan; chart arrays and the tape map are unbounded.
-- The COOP/COEP service worker for GitHub Pages reloads once and has no loop guard beyond that.
-- Visual polish: the kerb stripes render as dense hatching on bends, and in a 1280x720 window the right-hand panel scrolls behind the telemetry bar.
-
-## Pictures
-
-| | |
+| Input | Action |
 | --- | --- |
-| ![Editor: S-curve drawn and valid](docs/media/editor.png) | ![Training on the drawn track](docs/media/adapt.png) |
-| ![Top-down ghosts](docs/media/race-topdown.png) | ![Chase camera](docs/media/chase.png) |
-| ![In-car POV](docs/media/pov.png) | ![Top-down capture](docs/media/race.gif) |
+| 1 / 2 / 3 | Top-down, chase, in-car POV |
+| draw | Freehand overlay. Release to simplify and smooth. A stroke closes itself if its ends are within 1 m |
+| train on this | Hot-swap your track into training |
+| pause, baseline | Freeze learning, or watch the pure-pursuit car |
+| stage, grip, mass, DR | Curriculum override and domain randomization |
+| save / load | Checkpoint in IndexedDB |
+| leaderboard row | Replay that generation's best lap |
 
-Captured with `npm run media` under software GL, so the capture is slow and the GIF is choppy. The POV, chase and top-down shots are the synthetic ghost view.
+Useful URLs: `/?cars=64` for the 64-car view, `/?view=ghosts` for a scripted ghost lap with no training, `/dev/drive.html` to drive with WASD, and `/dev/showcase.html?manual=1&cam=pov` for the baseline-on-ice stage the clips were recorded from. A track you drew is in the URL hash.
 
-## Layout
+## Honest limits
 
-`src/shared` contracts, `src/track` generator, `src/sim` vehicle and env, `src/rl` PPO, `src/editor` drawing and URL hash, `src/viz` Three.js, `src/ui` charts and leaderboard, `src/workers` learner and env.
+- Training does not start from scratch. The policy is distilled from the pure-pursuit controller, so "learned to race" here means "imitated a hand-written driver, then fine-tuned", and the completion numbers above are mostly the imitation's doing.
+- Drift is not demonstrated on a track. In the physics test, with rear grip scaled to 0.8 the car holds a sustained slide (42 to 46 degrees of rear slip) and recovers when the steering is released. With rear grip at 0.5 it spins out. That is a slide, not a controlled drift, and no controller here drives one around a corner.
+- In the multi-car view the cars train on a pool of four generated tracks but only one track is drawn, so some ghosts look like they are driving off the road. They are on a track you cannot see.
+- Throughput is one process. The spec's four-worker `SharedArrayBuffer` farm is not built. The bare environment steps about 39,000 car-steps/s, but with the TF.js policy and PPO update in the loop training runs far slower than that.
+- The renderer has WebGPU and WebGL2 paths and a Low and a High preset. In headless software GL the High preset rendered a black frame, so every clip uses Low. GTAO, TAA, cascaded shadows and bloom from the spec are not implemented.
+- Frame rates were measured only under software GL, where the High preset reaches 22 fps against a 50 fps bar and stalls the main thread. Nobody has measured it on a GPU yet. The eval's matrix and hot-swap rows run in Node with the imitation-trained policy, so they show it holds up across surfaces and swaps, not that reinforcement learning discovered how to drive.
 
-## Credits and license
+## Credits
 
-MIT. See [LICENSE](LICENSE) and [CREDITS.md](CREDITS.md).
+- Built by [Alex Nieves](https://github.com/alexnieves-cs) with Claude Code.
+- Sibling project: [frontier-fly](https://github.com/alexnieves-cs/frontier-fly), the in-browser drone explorer whose stack and structure this reuses.
+- Full dependency and technique credits are in [CREDITS.md](CREDITS.md). Main libraries: [three.js](https://threejs.org) (MIT), [TensorFlow.js](https://www.tensorflow.org/js) (Apache-2.0), [Rapier](https://rapier.rs) (Apache-2.0), [uPlot](https://github.com/leeoniya/uPlot) (MIT), [fflate](https://github.com/101arrowz/fflate) (MIT).
+- The cross-origin-isolation service worker follows the approach of [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker).
+- Nothing in the repository is third-party art. The track, car and HUD geometry are drawn in code.
+
+## License
+
+MIT. See [LICENSE](LICENSE). Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -1,0 +1,188 @@
+{
+  "quick": false,
+  "rows": [
+    {
+      "milestone": "M2",
+      "test": "Stage 0 lap completion, headless, held-out seeds",
+      "target": ">= 80% within 180 s",
+      "measured": "100% (16/16) after 20 s; final policy 100% (16/16) after 67 s total",
+      "pass": true,
+      "note": "First figure: the stage-0 phase snapshot (20 s wall clock from start). Final policy: whole recipe (imitation of pure pursuit through stages 0-3, then PPO), 67 s. Pass needs both >= 80% and both <= 180 s. Held-out seeds 101-116, no DR (16 distinct tracks). The driving skill comes from DAgger imitation of the pure-pursuit baseline; PPO ran 4 gated updates (0 kept)."
+    },
+    {
+      "milestone": "M4",
+      "test": "S-curve stroke becomes a valid track",
+      "target": "closed, valid",
+      "measured": "valid, 44.6 m, 111 control points, validate+spline 2.3 ms",
+      "pass": true
+    },
+    {
+      "milestone": "M4",
+      "test": "Hot-swap: all envs report the new track id",
+      "target": "<= 15 s",
+      "measured": "1.8 s, 16/16 envs on user-5d19ea90",
+      "pass": true,
+      "note": "Each env finishes its episode, then restarts on the user track; any env still mid-episode at 8 s is retargeted. Wall clock on a shared machine. Zero-shot on the new track, sampled policy, no update: 19% of 64 episodes; deterministic pre-swap 100%."
+    },
+    {
+      "milestone": "M4",
+      "test": "Weights unchanged at the swap (hash equal)",
+      "target": "hash equal",
+      "measured": "f24be80b -> f24be80b (equal)",
+      "pass": true
+    },
+    {
+      "milestone": "M4",
+      "test": "Completion on the user track after 2 min fine-tune",
+      "target": ">= 80%",
+      "measured": "100% (was 100%); DR low 100% (was 8%); held-out drawn track 100% (was 100%)",
+      "pass": true,
+      "note": "120 s of training, 24 PPO updates + 96 DAgger batches (3 per PPO update, PPO first), probes (user/held-out procedural) 16s:100%/100% 32s:100%/100% 49s:100%/100% 61s:100%/100% 78s:100%/100% 90s:100%/100% 108s:100%/100% 120s:100%/100%. Adaptation is imitation of the pure-pursuit baseline (DAgger on the user track and the replay pool) interleaved with PPO. The attribution below splits imitation from PPO. Attribution, same starting weights, 120 s of training each (zero-shot 100%): imitation only: user 100% at the end, >= 80% 15 s, lowest user probe 100%, held-out procedural 100% at the end and 100% at worst; PPO only: user 100% at the end, >= 80% 17 s, lowest user probe 100%, held-out procedural 100% at the end and 100% at worst; combined (shipped): user 100% at the end, >= 80% 16 s, lowest user probe 100%, held-out procedural 100% at the end and 100% at worst. The base already drove this track, so there is no improvement to attribute."
+    },
+    {
+      "milestone": "M4",
+      "test": "Procedural completion retained, held-out seeds",
+      "target": ">= 90% of pre-swap",
+      "measured": "100% vs 100% pre-swap (100% retained, 16 seeds x 2)",
+      "pass": true,
+      "note": "Seeds the base recipe and the fine-tune never trained on, same cases before and after, deterministic policy."
+    },
+    {
+      "milestone": "M4",
+      "test": "Procedural completion retained, replay-pool seeds",
+      "target": ">= 90% of pre-swap",
+      "measured": "100% vs 100% pre-swap (100% retained, 24 seeds x 2)",
+      "pass": true,
+      "note": "These seeds are in the 30% replay share, so they were trained on during the fine-tune: reported next to the held-out row, not instead of it."
+    },
+    {
+      "milestone": "M4",
+      "test": "URL hash round-trips the track",
+      "target": "control points within 1 mm, same track id",
+      "measured": "111 points, worst 0.00 mm, hash 815 chars, id same",
+      "pass": true
+    },
+    {
+      "milestone": "M3",
+      "test": "64 ghost cars frame rate, Low preset",
+      "target": ">= 60 fps",
+      "measured": "60.0 fps median (59.9..60.0 over 3 windows), p95 frame 16.7 ms, 40 CPU-ms/frame in software GL",
+      "pass": true,
+      "note": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver); 4 cores, load 1.1 at start; 1280x720; learner n=64. Software GL rasterizes on the same CPU cores as the learner and everything else running, so this is pessimistic and noisy; CPU-ms/frame (all Chromium threads) moves less with load. See the hardware independent rows for a real GPU."
+    },
+    {
+      "milestone": "M3",
+      "test": "64 ghost cars frame rate, High preset",
+      "target": ">= 50 fps",
+      "measured": "22.1 fps median (21.1..22.7 over 3 windows), p95 frame 50.0 ms, 160 CPU-ms/frame in software GL",
+      "pass": false,
+      "note": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver); 4 cores, load 1.1 at start; 1280x720; learner n=64. Software GL rasterizes on the same CPU cores as the learner and everything else running, so this is pessimistic and noisy; CPU-ms/frame (all Chromium threads) moves less with load. See the hardware independent rows for a real GPU."
+    },
+    {
+      "milestone": "M3",
+      "test": "main-thread long tasks > 50 ms, Low preset",
+      "target": "0",
+      "measured": "0 in 3 x 8 s, worst 0.0 ms",
+      "pass": true,
+      "note": "PerformanceObserver longtask. Under software GL the compositor blocks the main thread in ReadPixels until SwiftShader finishes the frame, so a frame slower than 50 ms shows up here even though the JS took ~1 ms."
+    },
+    {
+      "milestone": "M3",
+      "test": "main-thread long tasks > 50 ms, High preset",
+      "target": "0",
+      "measured": "73 in 3 x 8 s, worst 114.0 ms",
+      "pass": false,
+      "note": "PerformanceObserver longtask. Under software GL the compositor blocks the main thread in ReadPixels until SwiftShader finishes the frame, so a frame slower than 50 ms shows up here even though the JS took ~1 ms."
+    },
+    {
+      "milestone": "M3",
+      "test": "JS time per frame (hardware independent), Low",
+      "target": "<= 8 ms mean and p95",
+      "measured": "mean 0.47 ms, p95 0.79, max 6.8 (update 0.02, render submit 0.41, ui 0.04) over 900 frames",
+      "pass": true,
+      "note": "Derived budget (half of a 60 Hz frame), not a SPEC number. Drawing buffer 1280x720, pixel ratio 1.00."
+    },
+    {
+      "milestone": "M3",
+      "test": "JS time per frame (hardware independent), High",
+      "target": "<= 8 ms mean and p95",
+      "measured": "mean 1.01 ms, p95 2.45, max 6.2 (update 0.04, render submit 0.85, ui 0.12) over 533 frames",
+      "pass": true,
+      "note": "Derived budget (half of a 60 Hz frame), not a SPEC number. Drawing buffer 1280x720, pixel ratio 1.00."
+    },
+    {
+      "milestone": "M3",
+      "test": "draw calls / triangles per frame",
+      "target": "<= 50 / 100000",
+      "measured": "Low 13 / 6656, High 13 / 6656",
+      "pass": true,
+      "note": "renderer.info.render summed over the main view and the POV picture-in-picture pass. 64 ghosts are one instanced draw."
+    },
+    {
+      "milestone": "M3",
+      "test": "leaderboard rows == PPO updates",
+      "target": "equal",
+      "measured": "24 rows (24 in the DOM) vs 24 metrics updates, gens 1..N contiguous",
+      "pass": true
+    },
+    {
+      "milestone": "M3",
+      "test": "click row replays a deterministic ghost lap",
+      "target": "identical poses",
+      "measured": "click -> replay -> end x2: ok; two probes identical (30 steps); max error vs tape 2.2e-16",
+      "pass": true,
+      "note": "The tape is the worker's pose recording of car 0 over one PPO rollout, not a full best lap; see NOTES/viz-requests.md."
+    },
+    {
+      "milestone": "M5",
+      "test": "Eval matrix completion (seeds x surfaces x DR)",
+      "target": ">= 70%",
+      "measured": "99% (143/144), worst cell 96%",
+      "pass": true,
+      "note": "Pre-registered: stage 2 tracks, seeds 201-212 (12, never trained on), 2 DR draw(s) per seed and cell, uniform surface mu. Stage 2 per cell: 99% (143/144); asphalt/low 100%, asphalt/high 100%, carpet/low 100%, carpet/high 100%, dirt/low 100%, dirt/high 96%; worst cell 96%. Stage 1 (info only): 99% (143/144); asphalt/low 100%, asphalt/high 100%, carpet/low 100%, carpet/high 100%, dirt/low 100%, dirt/high 96%. Stage 3 (info only): 99% (142/144); asphalt/low 100%, asphalt/high 100%, carpet/low 100%, carpet/high 100%, dirt/low 100%, dirt/high 92%. Policy = DAgger imitation of the pure-pursuit baseline, then 0/4 validation-gated PPO updates kept."
+    },
+    {
+      "milestone": "M5",
+      "test": "Pure-pursuit baseline (upper bound), stage 1, surface x DR",
+      "target": ">= 70% in every cell",
+      "measured": "100% overall, worst 100% (asphalt/low), 120 laps",
+      "pass": true
+    },
+    {
+      "milestone": "M5",
+      "test": "Pure-pursuit baseline (upper bound), stage 2, surface x DR",
+      "target": ">= 70% in every cell",
+      "measured": "100% overall, worst 100% (asphalt/low), 120 laps",
+      "pass": true
+    },
+    {
+      "milestone": "M5",
+      "test": "Pure-pursuit baseline (upper bound), stage 3, surface x DR",
+      "target": ">= 70% in every cell",
+      "measured": "100% overall, worst 100% (asphalt/low), 120 laps",
+      "pass": true
+    },
+    {
+      "milestone": "M5",
+      "test": "Car model at the corners of the high-DR box (oracle controller), stage 1",
+      "target": ">= 70% on every surface",
+      "measured": "99% overall, worst 98% (carpet), 120 laps",
+      "pass": true,
+      "note": "corners = mass, CG, mu0, B/C/E, springs, motor, servo each at an end of the spec range, latency 2, noise x2"
+    },
+    {
+      "milestone": "M5",
+      "test": "Car model at the corners of the high-DR box (oracle controller), stage 2",
+      "target": ">= 70% on every surface",
+      "measured": "98% overall, worst 95% (dirt), 120 laps",
+      "pass": true
+    },
+    {
+      "milestone": "M5",
+      "test": "Car model at the corners of the high-DR box (oracle controller), stage 3",
+      "target": ">= 70% on every surface",
+      "measured": "97% overall, worst 95% (dirt), 120 laps",
+      "pass": true
+    }
+  ]
+}
