@@ -11,7 +11,7 @@
 - Browser: `learner.worker.ts` calls `trainRecipe` with `BROWSER_TUNE` (stage 0 only, no PPO phase, no validation), then `configureFinetune`, horizon 32.
 
 ## How much is imitation, how much is PPO
-Essentially all of the lap-completing skill is imitation of the pure-pursuit baseline (which itself finishes about 100% of stage 0-3 tracks, all surfaces and DR levels, on seeds 101-116 x 2 copies). The policy is bounded by it. From-scratch PPO (no imitation) is not claimed to work; `scripts/rl-ppo-only.ts` is the control and has not been run.
+Essentially all of the lap-completing skill is imitation of the pure-pursuit baseline (which itself finishes about 100% of stage 0-3 tracks, all surfaces and DR levels, on seeds 101-116 x 2 copies). The policy is bounded by it. `scripts/rl-ppo-only.ts` is the from-scratch control. It was run once as a pre-registered study on the from-scratch-rl branch (`NOTES/ppo-only-prereg.md`, `NOTES/ppo-only-result.md`): PPO with no imitation, 300 updates in track-pool mode, drove 16/16 and 15/16 clean laps (no wall contact) on the held-out stage-0 tracks on seeds 1 and 2, about 25 minutes of CPU per seed. That is stage 0 only, and the policy swung between 2/16 and 16/16 at the informational probes along the way. Two findings from setting up the study: plain completion on stage 0 is fooled by wall-riding (steering centred at throttle 0.5 completes 16/16 held-out laps, 0/16 clean), and the 16 held-out seeds give only 9 distinct stage-0 shapes.
 
 PPO after the log-ratio fix, imitation policy through stage 3, 2 critic + 8 PPO updates, 24-episode validation suite (completion stayed 100% at every lr):
 
