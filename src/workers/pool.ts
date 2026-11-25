@@ -1,4 +1,5 @@
 /** Opens the learner and env workers. The showcase path trains inside the learner worker. */
+import type { FarmEndpoint } from './envFarm';
 
 export function openLearner(): Worker {
   return new Worker(new URL('./learner.worker.ts', import.meta.url), { type: 'module' });
@@ -21,4 +22,17 @@ export function ping(worker: Worker, t = 1): Promise<number> {
     worker.addEventListener('message', onMessage);
     worker.postMessage({ type: 'ping', t });
   });
+}
+
+/**
+ * Endpoint factory for EnvFarm.open({ spawn }) in the browser: one module worker per shard. The page
+ * must be cross-origin isolated (COOP/COEP, see vite.config.ts) for SharedArrayBuffer to exist.
+ */
+export function spawnFarmShard(): FarmEndpoint {
+  const worker = new Worker(new URL('./envFarm.worker.ts', import.meta.url), { type: 'module' });
+  return {
+    post: (msg) => worker.postMessage(msg),
+    onMessage: (fn) => worker.addEventListener('message', (ev: MessageEvent) => fn(ev.data)),
+    terminate: () => worker.terminate(),
+  };
 }

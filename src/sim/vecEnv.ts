@@ -71,8 +71,18 @@ export interface CarSnap {
   surfaceMu: number;
 }
 
+export interface VecEnvOpts {
+  /**
+   * Global index of slot 0. A shard of the env farm (src/workers/envFarmShard.ts) runs slots
+   * [lo, hi) of a larger env; with `slotOffset = lo` each slot seeds its sensor-noise stream exactly
+   * as slot `lo + i` of one big VecEnv would, so sharding does not change any trajectory.
+   */
+  slotOffset?: number;
+}
+
 export class VecEnv {
   readonly n: number;
+  readonly slotOffset: number;
   readonly obs: Float32Array;
   readonly rew: Float32Array;
   readonly done: Uint8Array;
@@ -86,8 +96,9 @@ export class VecEnv {
   /** Episodes finished since the last consume. */
   readonly finished: { lap: boolean; lapTime?: number; crash: boolean; ret: number; trackId: string; tRef: number; speed: number }[] = [];
 
-  constructor(n: number) {
+  constructor(n: number, opts: VecEnvOpts = {}) {
     this.n = n;
+    this.slotOffset = opts.slotOffset ?? 0;
     this.obs = new Float32Array(n * OBS_DIM);
     this.rew = new Float32Array(n);
     this.done = new Uint8Array(n);
@@ -132,7 +143,7 @@ export class VecEnv {
         lastLapTime: 0,
         lapProgress: 0,
         stepInLap: 0,
-        rng: makeRng(cfg.seed ?? i + 1, `env/${i}/${track.id}`),
+        rng: makeRng(cfg.seed ?? this.slotOffset + i + 1, `env/${this.slotOffset + i}/${track.id}`),
         delay: [],
         action: [0, 0.4],
         contact: false,

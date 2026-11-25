@@ -117,7 +117,8 @@ export type EnvOut =
 
 /**
  * Learner to one env-farm worker. `farmInit` hands over the shared buffer once; after that each
- * step is signalled through control words in shared memory, not by message (src/workers/farmLayout.ts).
+ * step is signalled through control words in shared memory, not by message (src/workers/envFarmLayout.ts).
+ * Observations, rewards, flags, poses and finished-episode records also travel through that buffer.
  */
 export type FarmIn =
   | Ping
@@ -125,23 +126,10 @@ export type FarmIn =
   | { type: 'farmReset'; epoch: number; tracks: TrackSpec[]; cfgs: EpisodeConfig[] }
   | { type: 'farmStop' };
 
-/** One finished episode, as `VecEnv.finished` records it, tagged with its global slot. */
-export interface FarmEpisode {
-  slot: number;
-  lap: boolean;
-  lapTime?: number;
-  crash: boolean;
-  ret: number;
-  trackId: string;
-  tRef: number;
-  speed: number;
-}
-
 export type FarmOut =
   | Pong
   | { type: 'farmReady'; shard: number }
   | { type: 'farmResetDone'; shard: number; epoch: number }
-  | { type: 'farmEpisodes'; shard: number; step: number; episodes: FarmEpisode[] }
   | { type: 'farmStopped'; shard: number }
   | { type: 'error'; message: string; shard?: number };
 
@@ -313,17 +301,6 @@ const trackSpec: Check = (v, p) => {
   return t.startIndex < t.samples.length ? null : `${p}.startIndex: ${t.startIndex} is past the last sample`;
 };
 
-const farmEpisode = obj({
-  slot: nonNegInt,
-  lap: bool,
-  'lapTime?': num,
-  crash: bool,
-  ret: num,
-  trackId: str,
-  tRef: num,
-  speed: num,
-});
-
 /** Upper bounds that keep a bad message from allocating without limit. */
 export const LIMITS = { learnerEnvs: 64, envs: 1024, seeds: 256, points: 20_000 } as const;
 
@@ -396,7 +373,6 @@ const FARM_OUT: Record<FarmOut['type'], Spec> = {
   pong: { t: num },
   farmReady: { shard: nonNegInt },
   farmResetDone: { shard: nonNegInt, epoch: nonNegInt },
-  farmEpisodes: { shard: nonNegInt, step: nonNegInt, episodes: arrayOf(farmEpisode) },
   farmStopped: { shard: nonNegInt },
   error: { message: str, 'shard?': nonNegInt },
 };

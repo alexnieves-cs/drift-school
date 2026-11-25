@@ -92,12 +92,6 @@ const EXAMPLES = {
     pong: { type: 'pong', t: 3 },
     farmReady: { type: 'farmReady', shard: 1 },
     farmResetDone: { type: 'farmResetDone', shard: 1, epoch: 1 },
-    farmEpisodes: {
-      type: 'farmEpisodes',
-      shard: 1,
-      step: 40,
-      episodes: [{ slot: 5, lap: true, lapTime: 9.5, crash: false, ret: 31, trackId: 'gen-1-s0', tRef: 7, speed: 3 }],
-    },
     farmStopped: { type: 'farmStopped', shard: 1 },
     error: { type: 'error', message: 'boom', shard: 2 },
   },
