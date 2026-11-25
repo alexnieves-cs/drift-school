@@ -18,6 +18,7 @@ import { AdaptationPanel } from './ui/adaptation';
 import { FineTune, type FineTuneReport } from './rl/finetune';
 import { openEnv, openLearner } from './workers/pool';
 import { saveCheckpoint, loadCheckpoint } from './rl/checkpoint';
+import { parseLearnerOut, stamp, type LearnerIn } from './shared/messages';
 import type { CameraMode, GenStat, TrackSpec } from './shared/types';
 import type { CarSnap } from './sim/vecEnv';
 
@@ -91,7 +92,7 @@ declare global {
 function startReplay(gen: number): void {
   const tape = tapes.get(gen);
   if (!tape) {
-    if (worker) worker.postMessage({ type: 'replayReq', gen });
+    if (worker) toWorker({ type: 'replayReq', gen });
     return;
   }
   if (!replayer.start(gen, tape)) return;
@@ -132,8 +133,13 @@ let swap: { id: string; t0: number } | null = null;
 let worker: Worker | null = null;
 let inline: import('./rl/trainer').Trainer | null = null;
 
-function send(msg: Record<string, unknown>): void {
-  if (worker) worker.postMessage(msg);
+/** Typed, versioned post to the learner worker (src/shared/messages.ts). */
+function toWorker(msg: LearnerIn): void {
+  worker?.postMessage(stamp(msg));
+}
+
+function send(msg: LearnerIn): void {
+  if (worker) toWorker(msg);
   else applyInline(msg);
 }
 
@@ -193,15 +199,15 @@ function onMetrics(stat: GenStat, tape?: ArrayLike<number>): void {
   adapt.dataset.adapt = `gen ${stat.gen} completion ${(stat.completion * 100).toFixed(0)}%`;
 }
 
-function applyInline(msg: Record<string, unknown>): void {
+function applyInline(msg: LearnerIn): void {
   if (!inline) return;
   if (msg.type === 'pause') return;
-  if (msg.type === 'baseline') inlineModeBaseline = Boolean(msg.on);
-  if (msg.type === 'setStage') inline.setStage(Number(msg.stage ?? 0));
+  if (msg.type === 'baseline') inlineModeBaseline = msg.on;
+  if (msg.type === 'setStage') inline.setStage(msg.stage);
   if (msg.type === 'setDR') {
-    inline.grip = Number(msg.grip ?? 1);
-    inline.massScale = Number(msg.mass ?? 1);
-    inline.dr = (msg.level as 'off' | 'low' | 'high') ?? 'off';
+    inline.grip = msg.grip;
+    inline.massScale = msg.mass;
+    inline.dr = msg.level;
   }
   if (msg.type === 'setTrackPool') void swapInline(msg);
 }
@@ -212,11 +218,11 @@ let inlinePaused = false;
 let inlineFine: FineTune | null = null;
 let inlineProc: TrackSpec[] = [];
 
-async function swapInline(msg: Record<string, unknown>): Promise<void> {
+async function swapInline(msg: Extract<LearnerIn, { type: 'setTrackPool' }>): Promise<void> {
   if (!inline) return;
-  const points = quantizePoints((msg.points as number[]) ?? []);
-  const halfWidth = Number(msg.halfWidth ?? 1);
-  const mu = Number(msg.mu ?? 1);
+  const points = quantizePoints(msg.points);
+  const halfWidth = msg.halfWidth;
+  const mu = msg.mu;
   if (!validateTrack(points, halfWidth).ok) {
     controls.setStatus('track is not valid', 'bad');
     return;
@@ -233,7 +239,7 @@ async function swapInline(msg: Record<string, unknown>): Promise<void> {
 }
 
 async function persist(name: string): Promise<void> {
-  if (worker) worker.postMessage({ type: 'checkpointSave', name });
+  if (worker) toWorker({ type: 'checkpointSave', name });
   if (!inline) return;
   const weights = inline.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
   await saveCheckpoint({ name, gen: inline.gen, stage: inline.curriculum.stage, weights });
@@ -242,7 +248,7 @@ async function persist(name: string): Promise<void> {
 
 async function restore(name: string): Promise<void> {
   if (worker) {
-    worker.postMessage({ type: 'checkpointLoad', name });
+    toWorker({ type: 'checkpointLoad', name });
     return;
   }
   const cp = await loadCheckpoint(name);
@@ -438,39 +444,44 @@ function startWorker(): void {
   env.postMessage({ type: 'ping', t: 7 });
   let trackLabel = '';
   worker.onmessage = (ev: MessageEvent) => {
-    const msg = ev.data as Record<string, unknown>;
-    if (msg.type === 'status') controls.setStatus(String(msg.text), String(msg.text).includes('racing') ? 'racing' : 'live');
+    const parsed = parseLearnerOut(ev.data);
+    if (!parsed.ok) {
+      console.warn(`drift-school: ignored a learner message: ${parsed.error}`);
+      return;
+    }
+    const msg = parsed.msg;
+    if (msg.type === 'status') controls.setStatus(msg.text, msg.text.includes('racing') ? 'racing' : 'live');
     if (msg.type === 'ghosts') {
-      const hero = heroFrom((msg.hero as CarSnap) ?? null, lastHero ?? blankHero());
+      const hero = heroFrom(msg.hero, lastHero ?? blankHero());
       if (typeof msg.bestLap === 'number') bestLap = msg.bestLap;
       // A synthetic stream (ghost view with ?train=1) owns the cars; the worker then only feeds panels.
-      if (!stream) feed(msg.poses as Float32Array, Number(msg.n ?? 0), hero, 0);
-      const id = String(msg.trackId ?? '');
+      if (!stream) feed(msg.poses, msg.n, hero, 0);
+      const id = msg.trackId;
       if (id !== trackLabel) {
         trackLabel = id;
         document.body.dataset.track = id;
       }
-      noteEnvTracks(msg.ids as string[] | undefined);
-      worker?.postMessage({ type: 'ghostAck' });
+      noteEnvTracks(msg.ids);
+      toWorker({ type: 'ghostAck' });
     }
-    if (msg.type === 'metrics') onMetrics(msg.stat as GenStat, msg.tape as ArrayLike<number> | undefined);
+    if (msg.type === 'metrics') onMetrics(msg.stat, msg.tape);
     if (msg.type === 'replayRes') {
-      const poses = msg.poses as ArrayLike<number>;
-      if (poses?.length) {
-        tapes.set(Number(msg.gen), Float32Array.from(poses));
-        startReplay(Number(msg.gen));
+      const poses = msg.poses;
+      if (poses.length) {
+        tapes.set(msg.gen, Float32Array.from(poses));
+        startReplay(msg.gen);
       }
     }
     if (msg.type === 'trackAck') {
-      adapt.dataset.adapt = `track ${String(msg.trackId)} envs ${String(msg.envCount)}/${String(msg.envTotal)} hash ${String(msg.hash)} weights ${msg.hash === msg.hashBefore ? 'unchanged' : 'CHANGED'}`;
+      adapt.dataset.adapt = `track ${msg.trackId} envs ${msg.envCount}/${msg.envTotal} hash ${String(msg.hash)} weights ${msg.hash === msg.hashBefore ? 'unchanged' : 'CHANGED'}`;
       const d = document.body.dataset;
-      d.swapAckTrack = String(msg.trackId);
+      d.swapAckTrack = msg.trackId;
       d.swapAckEnvs = `${String(msg.envCount)}/${String(msg.envTotal)}`;
       d.swapAckMs = swap ? String(Math.round(performance.now() - swap.t0)) : '';
       d.swapHashEqual = String(msg.hash === msg.hashBefore);
     }
     if (msg.type === 'adapt') adaptation.update(msg as unknown as FineTuneReport);
-    if (msg.type === 'error') controls.setStatus(String(msg.message), 'bad');
+    if (msg.type === 'error') controls.setStatus(msg.message, 'bad');
   };
   worker.onerror = () => {
     worker?.terminate();
@@ -478,7 +489,7 @@ function startWorker(): void {
     controls.setStatus('worker failed, inline', 'inline');
     void startInline();
   };
-  worker.postMessage({ type: 'init', n: carsParam(8), seeds: [1, 2, 3, 4], stage: 0 });
+  toWorker({ type: 'init', n: carsParam(8), seeds: [1, 2, 3, 4], stage: 0 });
 }
 
 window.addEventListener('keydown', (ev) => {

@@ -2,7 +2,7 @@ import type { Trainer } from '../rl/trainer';
 import { BROWSER_TUNE, configureFinetune, trainRecipe } from '../rl/recipe';
 import { generateTrack } from '../track/generate';
 import { buildTrackFromPoints, validateTrack } from '../track/build';
-import { handlePing } from '../shared/messages';
+import { handlePing, parseLearnerIn, stamp, type LearnerIn, type LearnerOut } from '../shared/messages';
 import { forkCheckpoint, loadCheckpoint, saveCheckpoint, type Checkpoint } from '../rl/checkpoint';
 import { quantizePoints } from '../editor/share';
 import { FineTune, type FineTuneReport } from '../rl/finetune';
@@ -25,13 +25,14 @@ let fine: FineTune | null = null;
 let lastAdaptPost = 0;
 let lastUserSave = 0;
 
-function post(data: unknown): void {
-  scope.postMessage(data);
+/** Every outgoing message is a typed `LearnerOut`, stamped with the protocol version. */
+function post(data: LearnerOut): void {
+  scope.postMessage(stamp(data));
 }
 
 /** Messages that arrive while the learner is still starting are applied once it is ready. */
-const queued: Record<string, unknown>[] = [];
-const DEFERRED = new Set(['setTrackPool', 'setStage', 'setDR', 'checkpointSave', 'checkpointLoad']);
+const queued: LearnerIn[] = [];
+const DEFERRED = new Set<LearnerIn['type']>(['setTrackPool', 'setStage', 'setDR', 'checkpointSave', 'checkpointLoad']);
 
 function weightsOf(t: Trainer): number[][] {
   return t.policy.getWeights().map((b) => Array.from(new Float32Array(b)));
@@ -80,7 +81,7 @@ function postAdapt(rep: FineTuneReport, force = false): void {
   const now = performance.now();
   if (!force && now - lastAdaptPost < 150) return;
   lastAdaptPost = now;
-  post({ type: 'adapt', ...rep });
+  post({ ...rep, type: 'adapt' });
 }
 
 async function maybeSaveUser(rep: FineTuneReport): Promise<void> {
@@ -139,11 +140,11 @@ async function announceSwap(trackId: string, hashBefore: string): Promise<void> 
   });
 }
 
-async function handle(msg: Record<string, unknown>): Promise<void> {
+async function handle(msg: LearnerIn): Promise<void> {
   if (msg.type === 'init') {
-    const n = Math.max(1, Math.min(64, Math.floor(Number(msg.n ?? 8)) || 8));
-    const stage = Number(msg.stage ?? 0);
-    const seeds = (msg.seeds as number[]) ?? [1, 2, 3, 4];
+    const n = Math.max(1, Math.min(64, Math.floor(msg.n)));
+    const stage = msg.stage;
+    const seeds = msg.seeds.length ? msg.seeds : [1, 2, 3, 4];
     procedural = seeds.map((seed) => generateTrack({ seed, stage }));
     post({ type: 'status', text: 'imitating pure pursuit' });
     // Same recipe function the eval measures (src/rl/recipe.ts), with the short browser schedule:
@@ -175,30 +176,30 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
     return;
   }
   if (!trainer) {
-    if (DEFERRED.has(String(msg.type))) queued.push(msg);
+    if (DEFERRED.has(msg.type)) queued.push(msg);
     return;
   }
   if (msg.type === 'pause') {
-    paused = Boolean(msg.paused);
+    paused = msg.paused;
     if (!paused) void loop();
   }
-  if (msg.type === 'baseline') baseline = Boolean(msg.on);
-  if (msg.type === 'setStage') trainer.setStage(Number(msg.stage ?? 0));
+  if (msg.type === 'baseline') baseline = msg.on;
+  if (msg.type === 'setStage') trainer.setStage(msg.stage);
   if (msg.type === 'setDR') {
-    trainer.grip = Number(msg.grip ?? 1);
-    trainer.massScale = Number(msg.mass ?? 1);
-    trainer.dr = (msg.level as 'off' | 'low' | 'high') ?? 'off';
+    trainer.grip = msg.grip;
+    trainer.massScale = msg.mass;
+    trainer.dr = msg.level;
   }
   if (msg.type === 'replayReq') {
-    const gen = Number(msg.gen ?? 0);
+    const gen = msg.gen;
     const tape = trainer.replays.get(gen);
     post({ type: 'replayRes', gen, poses: tape ? Array.from(tape) : [], n: tape ? tape.length / 7 : 0 });
   }
   if (msg.type === 'setTrackPool') {
     // Snap to mm first so the track id survives a round trip through the URL hash.
-    const points = quantizePoints((msg.points as number[]) ?? []);
-    const halfWidth = Number(msg.halfWidth ?? 1);
-    const mu = Number(msg.mu ?? 1);
+    const points = quantizePoints(msg.points);
+    const halfWidth = msg.halfWidth;
+    const mu = msg.mu;
     const check = validateTrack(points, halfWidth);
     if (!check.ok) {
       post({ type: 'error', message: `track rejected: ${[...new Set(check.issues.map((i) => i.reason))].join(', ')}` });
@@ -226,12 +227,12 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
     return;
   }
   if (msg.type === 'checkpointSave') {
-    const name = String(msg.name ?? 'manual');
+    const name = msg.name || 'manual';
     const ok = await persist({ name, gen: trainer.gen, stage: trainer.curriculum.stage, weights: weightsOf(trainer) });
     post(ok ? { type: 'checkpointSaved', name } : { type: 'error', message: 'could not save checkpoint' });
   }
   if (msg.type === 'checkpointLoad') {
-    const name = String(msg.name ?? 'manual');
+    const name = msg.name || 'manual';
     try {
       const cp = await loadCheckpoint(name);
       if (!cp) {
@@ -247,8 +248,13 @@ async function handle(msg: Record<string, unknown>): Promise<void> {
 }
 
 scope.onmessage = (ev: MessageEvent) => {
-  const msg = ev.data as Record<string, unknown>;
-  const pong = handlePing({ type: String(msg.type ?? ''), t: Number(msg.t ?? 0) });
+  const parsed = parseLearnerIn(ev.data);
+  if (!parsed.ok) {
+    post({ type: 'error', message: `rejected message: ${parsed.error}` });
+    return;
+  }
+  const msg = parsed.msg;
+  const pong = handlePing(msg);
   if (pong) {
     post(pong);
     return;
