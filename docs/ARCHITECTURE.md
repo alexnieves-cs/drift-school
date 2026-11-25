@@ -31,6 +31,7 @@ flowchart LR
 Differences from the SPEC diagram:
 
 - The learner worker owns the rollout and the update. `src/workers/env.worker.ts` can step a `VecEnv` on its own and answers `setTrackPool`, but the page does not run a four-worker `SharedArrayBuffer` farm. `src/workers/envFarm.ts` is that farm as a module: shard workers step slices of the slots over one shared buffer (`envFarmLayout.ts`, `envFarmShard.ts`, `envFarm.worker.ts`). It is tested in Node worker threads and not yet wired into the learner.
+- `src/rl/backend.ts` picks a TF.js backend for inference (WebGPU, then WebGL, then CPU), keeping one only if a small matmul matches plain JavaScript. `src/rl/batchInference.ts` gathers rows from many callers, pads them to a few fixed batch sizes so a GPU compiles few shaders, and runs one forward pass per chunk. Training stays on CPU. Both are tested on CPU in Node only; no GPU backend has run on a GPU, and nothing in the page uses them yet.
 - Rapier is used by the keyboard drive page (`/dev/drive.html`) for wall contact. `VecEnv` bounces cars off the wall polylines with a restitution impulse instead of stepping a Rapier world per car.
 - The learner streams pose frames to the page at about 30 Hz while a rollout runs, so ghosts keep moving between PPO updates.
 - Cross-origin isolation headers come from the Vite dev and preview servers. On GitHub Pages, which cannot set headers, `public/coi-serviceworker.js` rewrites responses and the page reloads once.
