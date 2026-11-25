@@ -112,6 +112,20 @@ export interface EpisodeConfig {
   raysOnly?: boolean;
   lapsTarget?: number;
   seed?: number;
+  /** Drift mode. Off unless set; see DriftConfig. */
+  drift?: DriftConfig;
+}
+
+/**
+ * Drift mode, off by default. `handbrake` lets the third action float (VecEnv actDim 3) pull the
+ * rear handbrake. `slipWeight` > 0 adds a body slip-angle bonus to the reward (src/sim/reward.ts).
+ */
+export interface DriftConfig {
+  handbrake?: boolean;
+  /** Bonus at the target slip angle, as a fraction of the step's progress reward. 0 turns it off. */
+  slipWeight?: number;
+  /** Slip angle in degrees at which the bonus stops growing. Default 25. */
+  slipTargetDeg?: number;
 }
 
 export interface StepInfo {

@@ -1,4 +1,4 @@
-import { ACT_DIM, OBS_DIM, type EpisodeConfig, type StepInfo, type TrackSpec } from '../shared/types';
+import { OBS_DIM, type EpisodeConfig, type StepInfo, type TrackSpec } from '../shared/types';
 import { CONTROL_DT } from '../shared/constants';
 import { makeRng, type RNG } from '../shared/rng';
 import { nearestSample } from '../track/sample';
@@ -78,11 +78,18 @@ export interface VecEnvOpts {
    * as slot `lo + i` of one big VecEnv would, so sharding does not change any trajectory.
    */
   slotOffset?: number;
+  /**
+   * Floats per action: 2 (steer, throttle; the default) or 3 (steer, throttle, handbrake). The
+   * handbrake only acts on slots whose config sets `drift.handbrake`; values <= 0 release it. The
+   * observation stays OBS_DIM floats either way and does not include the handbrake.
+   */
+  actDim?: 2 | 3;
 }
 
 export class VecEnv {
   readonly n: number;
   readonly slotOffset: number;
+  readonly actDim: 2 | 3;
   readonly obs: Float32Array;
   readonly rew: Float32Array;
   readonly done: Uint8Array;
@@ -99,6 +106,8 @@ export class VecEnv {
   constructor(n: number, opts: VecEnvOpts = {}) {
     this.n = n;
     this.slotOffset = opts.slotOffset ?? 0;
+    this.actDim = opts.actDim ?? 2;
+    if (this.actDim !== 2 && this.actDim !== 3) throw new Error(`VecEnv: actDim must be 2 or 3, got ${String(opts.actDim)}`);
     this.obs = new Float32Array(n * OBS_DIM);
     this.rew = new Float32Array(n);
     this.done = new Uint8Array(n);
@@ -183,19 +192,23 @@ export class VecEnv {
     for (let i = 0; i < this.n; i++) {
       const slot = this.slots[i];
       if (!slot) continue;
-      let steer = actions[i * ACT_DIM] ?? 0;
-      let throttle = actions[i * ACT_DIM + 1] ?? 0;
+      const ad = this.actDim;
+      let steer = actions[i * ad] ?? 0;
+      let throttle = actions[i * ad + 1] ?? 0;
+      let handbrake = ad === 3 && slot.cfg.drift?.handbrake ? Math.max(0, Math.min(1, actions[i * ad + 2] ?? 0)) : 0;
       if (slot.cfg.latencyTicks > 0) {
-        slot.delay.push(steer, throttle);
-        const lag = slot.cfg.latencyTicks * 2;
+        if (ad === 3) slot.delay.push(steer, throttle, handbrake);
+        else slot.delay.push(steer, throttle);
+        const lag = slot.cfg.latencyTicks * ad;
         if (slot.delay.length > lag) {
           steer = slot.delay.shift()!;
           throttle = slot.delay.shift()!;
+          if (ad === 3) handbrake = slot.delay.shift()!;
         }
       }
       const pre = slot.track.samples[slot.hint];
       slot.car.surfaceMu = pre && pre.mu > 0 ? pre.mu / 1.05 : 1;
-      const st = slot.car.step(steer, throttle, CONTROL_DT);
+      const st = slot.car.step(steer, throttle, CONTROL_DT, handbrake);
       const q = nearestSample(slot.track, slot.car.px, slot.car.pz, slot.hint);
       slot.hint = q.index;
       let ds = q.sample.s - slot.prevS;
@@ -246,6 +259,9 @@ export class VecEnv {
           prevThrottle: slot.book.prevThrottle,
           speed: slot.car.speed(),
           wrongWay: wrong,
+          slip: Math.atan2(slot.car.vz, Math.max(0.3, Math.abs(slot.car.vx))),
+          slipWeight: slot.cfg.drift?.slipWeight ?? 0,
+          slipTarget: slot.cfg.drift?.slipTargetDeg !== undefined ? (slot.cfg.drift.slipTargetDeg * Math.PI) / 180 : undefined,
         },
         slot.book,
         stepCap,
@@ -339,15 +355,16 @@ export class VecEnv {
    * pass BaselineOpts for the oracle variants, or a controller function to drive with something else.
    */
   baselineActions(ctl?: BaselineOpts | BaselineController): Float32Array {
-    const out = new Float32Array(this.n * ACT_DIM);
+    const ad = this.actDim;
+    const out = new Float32Array(this.n * ad);
     for (let i = 0; i < this.n; i++) {
       const slot = this.slots[i];
       if (!slot) continue;
       const cmd =
         typeof ctl === 'function' ? ctl(slot.car, slot.track, slot.hint) : purePursuit(slot.car, slot.track, slot.hint, ctl, slot.mem);
       slot.hint = cmd.hint;
-      out[i * ACT_DIM] = cmd.steer;
-      out[i * ACT_DIM + 1] = cmd.throttle;
+      out[i * ad] = cmd.steer;
+      out[i * ad + 1] = cmd.throttle;
     }
     return out;
   }

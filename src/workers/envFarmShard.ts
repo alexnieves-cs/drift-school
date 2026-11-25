@@ -4,7 +4,7 @@
  * browser worker (envFarm.worker.ts), a Node worker thread (tests) and in-process (EnvFarm's inline
  * mode), so the deterministic test path exercises exactly the code the workers run.
  */
-import { ACT_DIM, OBS_DIM, type EpisodeConfig, type TrackSpec } from '../shared/types';
+import { OBS_DIM, type EpisodeConfig, type TrackSpec } from '../shared/types';
 import { handlePing, parseFarmIn, stamp, type FarmIn, type FarmOut } from '../shared/messages';
 import { VecEnv } from '../sim/vecEnv';
 import { CTRL, EP, EP_STRIDE, INFO, INFO_STRIDE, farmViews, type FarmViews } from './envFarmLayout';
@@ -24,10 +24,10 @@ export class FarmShard {
     this.shard = init.shard;
     this.lo = init.lo;
     this.hi = init.hi;
-    if (init.actDim !== ACT_DIM) throw new Error(`shard ${init.shard}: actDim ${init.actDim} is not supported, expected ${ACT_DIM}`);
+    if (init.actDim !== 2 && init.actDim !== 3) throw new Error(`shard ${init.shard}: actDim must be 2 or 3, got ${init.actDim}`);
     this.actDim = init.actDim;
     this.views = farmViews(init.buffer, init.total, init.actDim);
-    this.env = new VecEnv(init.hi - init.lo, { slotOffset: init.lo });
+    this.env = new VecEnv(init.hi - init.lo, { slotOffset: init.lo, actDim: init.actDim });
     this.local = new Float32Array((init.hi - init.lo) * init.actDim);
   }
 

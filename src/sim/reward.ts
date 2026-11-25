@@ -16,6 +16,12 @@ export interface RewardInput {
   prevThrottle: number;
   speed: number;
   wrongWay: boolean;
+  /** Body slip angle in radians, for the drift bonus. */
+  slip?: number;
+  /** Drift bonus weight; 0 or missing leaves the reward exactly as before. */
+  slipWeight?: number;
+  /** Slip angle in radians where the bonus stops growing. Default DRIFT_TARGET_DEFAULT. */
+  slipTarget?: number;
 }
 
 export interface RewardOut {
@@ -47,9 +53,29 @@ export class EpisodeBook {
 
 export const MAX_DS = 0.55;
 
+/** Below this speed (m/s) a large slip angle is a spin or a crawl, not a drift. */
+export const DRIFT_MIN_SPEED = 1.5;
+export const DRIFT_TARGET_DEFAULT = (25 * Math.PI) / 180;
+
+/**
+ * Drift bonus: `slipWeight * min(|slip|, target) / target * ds`. It scales with forward progress,
+ * so sliding without getting anywhere earns nothing, and a slide at the target angle earns
+ * (1 + slipWeight) times the progress reward. Nothing is paid off track, against a wall, going the
+ * wrong way or below DRIFT_MIN_SPEED.
+ */
+export function slipBonus(inp: RewardInput): number {
+  const w = inp.slipWeight ?? 0;
+  if (!(w > 0)) return 0;
+  if (!(inp.ds > 0 && inp.ds < MAX_DS)) return 0;
+  if (inp.speed <= DRIFT_MIN_SPEED || inp.offTrack || inp.wallHit || inp.inContact || inp.wrongWay) return 0;
+  const target = inp.slipTarget && inp.slipTarget > 0 ? inp.slipTarget : DRIFT_TARGET_DEFAULT;
+  return (w * Math.min(Math.abs(inp.slip ?? 0), target) * inp.ds) / target;
+}
+
 export function scoreStep(inp: RewardInput, book: EpisodeBook, stepCap: number, lapsTarget: number, laps: number): RewardOut {
   let reward = -0.01;
   if (inp.ds > 0 && inp.ds < MAX_DS) reward += inp.ds;
+  if (inp.slipWeight && inp.slipWeight > 0) reward += slipBonus(inp);
   if (inp.lapDone) {
     reward += 10;
     if (inp.lapTime > 0.5 && inp.tRef > 0 && inp.lapTime < inp.tRef) {

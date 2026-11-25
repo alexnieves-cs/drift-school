@@ -16,6 +16,9 @@ export interface PoseInit {
 
 const WHEEL_I = 8e-4;
 
+/** Handbrake torque per rear wheel at full pull, as a multiple of motor torque. */
+export const HANDBRAKE_TORQUE_GAIN = 3;
+
 export class Vehicle {
   readonly p: CarParams;
   px = 0;
@@ -118,17 +121,24 @@ export class Vehicle {
     return axle === 'front' ? (this.slipA[0]! + this.slipA[1]!) / 2 : (this.slipA[2]! + this.slipA[3]!) / 2;
   }
 
-  step(steerCmd: number, throttleCmd: number, dt: number): CarState {
+  /**
+   * `handbrake` in [0, 1] (drift mode, off by default) clamps the rear wheels with a friction brake
+   * of up to HANDBRAKE_TORQUE_GAIN x motor torque and cuts rear drive in proportion. The brake slows
+   * a wheel toward zero spin and never reverses it, so a full pull locks the rears. At 0 the step is
+   * exactly the step without the argument.
+   */
+  step(steerCmd: number, throttleCmd: number, dt: number, handbrake = 0): CarState {
     const sub = 1 / 500;
     const n = Math.max(1, Math.round(dt / sub));
     const h = dt / n;
     const steer = clamp(steerCmd, -1, 1);
     const throttle = clamp(throttleCmd, -1, 1);
-    for (let i = 0; i < n; i++) this.substep(steer, throttle, h);
+    const hb = handbrake > 0 ? Math.min(1, handbrake) : 0;
+    for (let i = 0; i < n; i++) this.substep(steer, throttle, h, hb);
     return this.writeState();
   }
 
-  private substep(steerCmd: number, throttle: number, dt: number): void {
+  private substep(steerCmd: number, throttle: number, dt: number, hb: number): void {
     const p = this.p;
     const target = steerCmd * p.steer.maxAngle + p.steer.offset;
     this.steer = servoStep(this.steer, target, p.steer.rate, dt);
@@ -181,6 +191,7 @@ export class Vehicle {
       if (share > 0) {
         if (reverse) T = -brakeCmd * p.motor.torque * share;
         else T = motorTorque(this.omega[i]!, this.driveState, p.motor) * share;
+        if (hb > 0 && !front) T *= 1 - hb;
       }
       const tire = this.tire;
       tireForcesInto(
@@ -198,7 +209,13 @@ export class Vehicle {
       const Tbrake = reverse ? 0 : brakeCmd * p.motor.torque * 2.2 * Math.sign(this.omega[i]! || vLong || 1);
       const dw = (T - Tbrake - tire.Fx * WHEEL_RADIUS) / WHEEL_I;
       const capped = clamp(dw * dt, -40, 40);
-      this.omega[i] = clamp(this.omega[i]! + capped, -900, 900);
+      let w = clamp(this.omega[i]! + capped, -900, 900);
+      if (hb > 0 && !front) {
+        // Friction brake: take up to `lock` rad/s off the spin, stopping at zero.
+        const lock = ((hb * p.motor.torque * HANDBRAKE_TORQUE_GAIN) / WHEEL_I) * dt;
+        w = Math.abs(w) <= lock ? 0 : w - Math.sign(w) * lock;
+      }
+      this.omega[i] = w;
 
       const rr = rollingForce(fz, vLong);
       const FxT = tire.Fx + rr * cδ;

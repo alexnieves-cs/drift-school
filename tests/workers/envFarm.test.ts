@@ -175,6 +175,26 @@ describe('env farm inline', () => {
     }
   });
 
+  it('carries the drift-mode handbrake action (actDim 3) the same way', async () => {
+    const { tracks, cfgs } = setup();
+    const drift = cfgs.map((c) => ({ ...c, drift: { handbrake: true, slipWeight: 0.5 } }));
+    const env = new VecEnv(N, { actDim: 3 });
+    env.reset(tracks, drift);
+    const farm = await EnvFarm.open({ total: N, shards: 4, actDim: 3 });
+    await farm.reset(tracks, drift);
+    const rng = makeRng(9, 'farm-drift');
+    for (let t = 0; t < 200; t++) {
+      const a = new Float32Array(N * 3);
+      for (let i = 0; i < a.length; i++) a[i] = i % 3 === 2 ? (rng.next() < 0.1 ? 1 : 0) : rng.range(-1, 1);
+      const want = env.step(a);
+      const got = farm.step(a);
+      expect(Buffer.from(got.obs.slice().buffer).equals(Buffer.from(want.obs.slice().buffer)), `obs at step ${t}`).toBe(true);
+      expect(Array.from(got.rew)).toEqual(Array.from(want.rew));
+      env.finished.length = 0;
+    }
+    await farm.close();
+  });
+
   it('rejects misuse with plain errors', async () => {
     const farm = await EnvFarm.open({ total: 4, shards: 2 });
     expect(() => farm.step(new Float32Array(8))).toThrow(/step before reset/);
