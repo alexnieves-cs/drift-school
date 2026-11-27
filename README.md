@@ -11,9 +11,9 @@
 
 > **Status: v1.0.0, a stable stopping point (Nov 2026).** The sim, editor, hot-swap, training view and cameras are done and covered by CI (lint, typecheck, unit tests, build and a Playwright e2e run). Demo moments 2 (best lap time dropping) and 4 (a countersteer drift) are not shown and stay documented as known limits in the table below and in [Honest limits](#honest-limits); the four-worker training farm and the GTAO, TAA and bloom effects from the spec are out of scope for this release. The High preset is **unverified on GPU**: it has only been measured under software GL.
 
-The cars run on a vehicle model written for this project: Pacejka tires, four spring-damper suspensions with real weight transfer, a motor curve and a rate-limited steering servo, stepped at 500 Hz. A PPO policy trains in a Web Worker beside it, rendering is Three.js (WebGPU when the browser offers it, WebGL2 otherwise), and everything is deterministic from a seed. Draw a loop, press **Train on this**, and the new track is hot-swapped into the running training session without touching the weights.
+The cars run on a vehicle model written for this project: Pacejka tires, four spring-damper suspensions with real weight transfer, a motor curve and a rate-limited steering servo, stepped at 500 Hz. A PPO policy trains in a Web Worker beside it, rendering is Three.js on WebGL2 (a WebGPU path is opt-in with `?webgpu=1&quality=high`), and everything is deterministic from a seed. Draw a loop, press **Train on this**, and the new track is hot-swapped into the running training session without touching the weights.
 
-The clip above is a timelapse of the live app: a track drawn with the mouse, validated in 8 ms, swapped into training, then lapped. Its source is in [`scripts/record-demos.mjs`](scripts/record-demos.mjs).
+The clip above is a timelapse of the live app: a track drawn with the mouse, validated in 7.9 ms, swapped into training, then lapped. Its source is in [`scripts/record-demos.mjs`](scripts/record-demos.mjs).
 
 ## What's in it
 
@@ -23,7 +23,7 @@ The clip above is a timelapse of the live app: a track drawn with the mouse, val
 | **Procedural tracks** | A seeded generator (jittered hull, displacement, Catmull-Rom spline) in five difficulty stages. Same seed, same track, byte for byte. |
 | **Draw-a-track editor** | Freehand stroke, simplified and smoothed, checked live for self-intersection, tight radius, short length and overlap, with the reason and the location. |
 | **Hot-swap and fine-tune** | 70% your track, 30% procedural, a temporary entropy bump, and a forked checkpoint so the base model survives. |
-| **Live training view** | 64 instanced ghost cars, a generation leaderboard you can click to replay, uPlot charts, wheel-load telemetry and a speed heatmap. |
+| **Live training view** | Up to 64 instanced ghost cars (8 by default), a generation leaderboard you can click to replay, uPlot charts, wheel-load telemetry and a speed heatmap. |
 | **Three cameras** | Top-down, wall-aware chase, and an in-car POV with a HUD. Keys 1, 2, 3. |
 | **Shareable tracks** | A drawn track lives in the URL hash, quantized to millimetres. |
 | **Headless sim** | The sim, tracks and RL code never import Three.js or the DOM, and ESLint enforces it. `npm run eval` trains and scores in Node. |
@@ -54,10 +54,10 @@ Every number comes from a script in this repository. [docs/BENCHMARKS.md](docs/B
 | Track generation / validation | 1.1 ms / 0.7 ms median | `npm run perf` |
 | Pure-pursuit lap, hairpin, dry / ice | 16.4 s / 22.6 s | `scripts/record-demos.mjs hairpin` |
 | Hot-swap onto a drawn S-curve: every env moved, weights unchanged, completion after 2 min, no forgetting | 1.8 s for 16/16 envs; hash equal; 100%; procedural 100% retained | `npm run eval` |
-| Surface x randomization matrix (8 seeds x asphalt, carpet, dirt x DR low, high) | 99% (143/144) | `npm run eval` |
+| Surface x randomization matrix (12 seeds x asphalt, carpet, dirt x DR low, high, 2 draws each) | 99% (143/144) | `npm run eval` |
 | 64 ghost cars while 64 train, software GL, no GPU | Low preset 60 fps median, High 22 fps (bar 50: fails here) | `npm run eval` |
 
-Measured in a 4-vCPU Linux container with software rendering. Frame rate on a real GPU is not in this table, and the High preset is unverified on GPU. The full line-by-line acceptance status, including what is weak evidence, is in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md).
+Measured in a 4-vCPU Linux container with software rendering. Frame rate on a real GPU is not in this table, and the High preset is unverified on GPU. The full line-by-line acceptance status, including what is weak evidence, is in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md). That page was written with PR #3 and kept as written, so some of its numbers come from an earlier run than this table.
 
 ## How training works
 
@@ -117,15 +117,16 @@ The dev server sends the COOP and COEP headers that `SharedArrayBuffer` needs. G
 | train on this | Hot-swap your track into training |
 | pause, baseline | Freeze learning, or watch the pure-pursuit car |
 | stage, grip, mass, DR | Curriculum override and domain randomization |
+| low / high | Render quality preset |
 | save / load | Checkpoint in IndexedDB |
 | leaderboard row | Replay that generation's best lap |
 
-Useful URLs: `/?cars=64` for the 64-car view, `/?view=ghosts` for a scripted ghost lap with no training, `/dev/drive.html` to drive with WASD, and `/dev/showcase.html?manual=1&cam=pov` for the baseline-on-ice stage the clips were recorded from. A track you drew is in the URL hash.
+Useful URLs: `/?cars=64` for the 64-car view, `/?view=ghosts` for a scripted ghost lap with no training, `/dev/drive.html` to drive with WASD, and `/dev/showcase.html?cam=pov` for the baseline-on-ice stage the clips were recorded from (the recorder adds `manual=1`, which pauses the page until a script steps it). A track you drew is in the URL hash.
 
 ## Honest limits
 
 - Training does not start from scratch. The policy is distilled from the pure-pursuit controller, so "learned to race" here means "imitated a hand-written driver, then fine-tuned", and the completion numbers above are mostly the imitation's doing.
-- Drift is not demonstrated on a track. In the physics test, with rear grip scaled to 0.8 the car holds a sustained slide (42 to 46 degrees of rear slip) and recovers when the steering is released. With rear grip at 0.5 it spins out. That is a slide, not a controlled drift, and no controller here drives one around a corner.
+- Drift is not demonstrated on a track. In the physics test, with rear grip scaled to 0.8 the car holds a sustained slide (42 to 46 degrees of rear slip) and recovers when the steering is released. With rear grip at 0.5 it spins out. That is a slide, not a controlled drift. A separate scripted maneuver in `tests/sim/drift.test.ts` holds a slide through one turn with countersteer on open ground and recovers, but no controller drives a drift on a track.
 - In the multi-car view the cars train on a pool of four generated tracks but only one track is drawn, so some ghosts look like they are driving off the road. They are on a track you cannot see.
 - Throughput is one process. The spec's four-worker `SharedArrayBuffer` farm is not built and is out of scope for v1.0.0. The bare environment steps about 39,000 car-steps/s, but with the TF.js policy and PPO update in the loop training runs far slower than that.
 - The renderer has WebGPU and WebGL2 paths and a Low and a High preset. In headless software GL the High preset rendered a black frame, so every clip uses Low. GTAO, TAA, cascaded shadows and bloom from the spec are not implemented and are out of scope for v1.0.0.
